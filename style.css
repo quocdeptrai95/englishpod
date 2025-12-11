@@ -1872,5 +1872,5 @@ audio::-webkit-media-controls-panel {
     to { opacity: 1; transform: translateY(0); }
 }
 
-.vocab-word { cursor: help; }
+.vocab-word { cursor: pointer; }
 .vocab-word:hover { background: var(--accent-light); border-radius: 4px; }
