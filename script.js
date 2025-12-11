@@ -956,12 +956,9 @@ function startRolePlay() {
     // Update role selector with actual speakers
     const roleSelector = document.querySelector('.role-selector');
     if (roleSelector) {
-        let html = '<p><strong>Choose your role:</strong></p><div class="role-buttons">';
+        let html = '<div class="role-buttons">';
         speakers.forEach(speaker => {
-            const count = rolePlayDialogues.filter(d => d.speaker === speaker).length;
-            html += `<button class="role-btn" data-role="${speaker}">
-                        I am <strong>${speaker}</strong> (${count} lines)
-                     </button>`;
+            html += `<button class="role-btn" data-role="${speaker}">I am ${speaker}</button>`;
         });
         html += '</div>';
         roleSelector.innerHTML = html;
@@ -980,14 +977,6 @@ function startRolePlay() {
                 showNextRolePlayLine();
             });
         });
-    }
-    
-    if (practiceTextEl) {
-        practiceTextEl.innerHTML = `
-            <p style="text-align: center; font-size: 16px; opacity: 0.8;">
-                👆 Select which character you want to play
-            </p>
-        `;
     }
 }
 
