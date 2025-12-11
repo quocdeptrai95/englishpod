@@ -1,4 +1,5 @@
-const CACHE_NAME = 'english-v2';
+const CACHE_NAME = 'english-v3';
+const AUDIO_CACHE_NAME = 'english-audio-v1';
 const urlsToCache = [
     './',
     './index.html',
@@ -23,7 +24,7 @@ self.addEventListener('activate', event => {
         caches.keys().then(cacheNames => {
             return Promise.all(
                 cacheNames.map(cacheName => {
-                    if (cacheName !== CACHE_NAME) {
+                    if (cacheName !== CACHE_NAME && cacheName !== AUDIO_CACHE_NAME) {
                         return caches.delete(cacheName);
                     }
                 })
@@ -36,16 +37,39 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
     const url = event.request.url;
     
-    // Skip cross-origin requests (like archive.org audio files) - let browser handle directly
+    // Handle audio files from archive.org - cache them for offline playback
+    if (url.includes('archive.org') && url.includes('.mp3')) {
+        event.respondWith(
+            caches.open(AUDIO_CACHE_NAME).then(cache => {
+                return cache.match(event.request).then(response => {
+                    if (response) {
+                        console.log('SW: Serving audio from cache:', url);
+                        return response;
+                    }
+                    
+                    console.log('SW: Fetching audio from network:', url);
+                    return fetch(event.request).then(networkResponse => {
+                        // Cache audio file for next time
+                        if (networkResponse && networkResponse.status === 200) {
+                            cache.put(event.request, networkResponse.clone());
+                        }
+                        return networkResponse;
+                    });
+                });
+            })
+        );
+        return;
+    }
+    
+    // Skip other cross-origin requests
     if (!url.startsWith(self.location.origin)) {
-        console.log('SW: Skipping cross-origin:', url);
-        return fetch(event.request);
+        return;
     }
     
     // Skip chunk files - load them fresh each time to avoid caching issues
     if (url.includes('episodes-chunk-')) {
         console.log('SW: Skipping chunk file:', url);
-        return fetch(event.request);
+        return;
     }
 
     event.respondWith(
