@@ -255,11 +255,13 @@
             const loadingScreen = document.getElementById('loadingScreen');
             const appContainer = document.querySelector('.app-container');
             
-            setTimeout(() => {
-                loadingScreen.style.opacity = '0';
-                appContainer.style.opacity = '1';
-                setTimeout(() => loadingScreen.remove(), 500);
-            }, 1000);
+            if (loadingScreen && appContainer) {
+                setTimeout(() => {
+                    loadingScreen.style.opacity = '0';
+                    appContainer.style.opacity = '1';
+                    setTimeout(() => loadingScreen.remove(), 500);
+                }, 1000);
+            }
         });
     </script>
 </body>
