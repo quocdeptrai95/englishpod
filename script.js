@@ -55,15 +55,17 @@ const transcriptContent = document.getElementById('transcriptContent');
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         renderEpisodes();
-        // Preload first 2 chunks for faster access to first 100 episodes
-        loadChunk(1).catch(() => {});
-        setTimeout(() => loadChunk(2).catch(() => {}), 500);
+        // Preload all chunks in background for instant access to all 365 episodes
+        for (let i = 1; i <= 8; i++) {
+            setTimeout(() => loadChunk(i).catch(() => {}), i * 100);
+        }
     });
 } else {
     renderEpisodes();
-    // Preload first 2 chunks for faster access to first 100 episodes
-    loadChunk(1).catch(() => {});
-    setTimeout(() => loadChunk(2).catch(() => {}), 500);
+    // Preload all chunks in background for instant access to all 365 episodes
+    for (let i = 1; i <= 8; i++) {
+        setTimeout(() => loadChunk(i).catch(() => {}), i * 100);
+    }
 }
 
 // Filter tabs
