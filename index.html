@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="description" content="Learn English through 365 podcast conversations. Practice pronunciation with AI-powered speech recognition. Improve your English speaking skills.">
+    <meta name="keywords" content="learn english, english podcast, pronunciation practice, speech recognition, ESL, english conversation">
+    <meta name="author" content="English Learning">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0f0f0f">
+    <title>English - Learn English Through 365 Conversations</title>
+    
+    <!-- Performance optimizations -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Preload critical resources -->
+    <link rel="preconnect" href="https://archive.org" crossorigin>
+    <link rel="dns-prefetch" href="https://archive.org">
+    
+    <!-- Critical CSS -->
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- Preload script -->
+    <link rel="preload" href="script.js" as="script">
+    
+    <script>
+        // Register service worker for offline support and caching
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').catch(() => {});
+            });
+        }
+    </script>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loadingScreen" style="position: fixed; inset: 0; background: #0f0f0f; display: flex; align-items: center; justify-content: center; z-index: 9999;">
+        <div style="text-align: center;">
+            <div style="width: 60px; height: 60px; border: 3px solid #333; border-top: 3px solid #6366f1; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>
+            <h2 style="color: #6366f1; font-size: 24px; font-weight: 600; margin: 0;">English</h2>
+            <p style="color: #a0a0a0; font-size: 14px; margin-top: 8px;">Loading...</p>
+        </div>
+    </div>
+    
+    <style>
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .app-container {
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .app-container.loaded {
+            opacity: 1;
+        }
+    </style>
+    
+    <div class="app-container" id="appContainer">
+    <div class="container">
+        <header>
+            <h1>English</h1>
+            <p>Learn English through 365 conversations at various levels.</p>
+        </header>
+        
+        <div class="filter-tabs">
+            <button class="filter-tab active" data-level="all">All</button>
+            <button class="filter-tab" data-level="Elementary">Elementary</button>
+            <button class="filter-tab" data-level="Intermediate">Intermediate</button>
+            <button class="filter-tab" data-level="Upper-Intermediate">Upper-Intermediate</button>
+            <button class="filter-tab" data-level="Advanced">Advanced</button>
+            <button class="filter-tab" data-level="Daily Life">Daily Life</button>
+            <button class="filter-tab" data-level="The Office">The Office</button>
+            <button class="filter-tab" data-level="The Weekend">The Weekend</button>
+            <button class="filter-tab" data-level="Global View">Global View</button>
+        </div>
+
+        <div class="episodes-grid" id="episodesGrid"></div>
+
+        <div class="episode-detail" id="episodeDetail" style="display: none;">
+            <button class="close-btn" id="closeBtn">✕ Close</button>
+            
+            <div class="detail-header">
+                <span class="detail-level" id="detailLevel">Elementary</span>
+                <h2 id="detailTitle">Difficult Customer</h2>
+            </div>
+
+            <div class="tabs-section">
+                <div class="tabs">
+                    <button class="tab-btn active" data-tab="transcript">Transcript</button>
+                    <button class="tab-btn" data-tab="vocab">Vocab</button>
+                    <button class="tab-btn" data-tab="practice">🎤 Practice</button>
+                </div>
+                
+                <div class="tab-content active" id="transcriptTab">
+                    <button class="show-btn" id="showTranscriptBtn">👁 Show</button>
+                    <div class="content-area" id="transcriptContent" style="display: none;">
+                        <p>Click "Show" to view the transcript.</p>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="vocabTab">
+                    <button class="show-btn" id="showVocabBtn">👁 Show</button>
+                    <div class="content-area" id="vocabContent" style="display: none;">
+                        <p>Click "Show" to view the vocabulary.</p>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="practiceTab">
+                    <div class="practice-container">
+                        <div class="practice-header">
+                            <h3>🎤 Pronunciation Practice</h3>
+                            <p>Practice single lines, full dialogues, or vocabulary</p>
+                        </div>
+                        
+                        <div class="practice-mode-selector">
+                            <button class="mode-btn active" data-mode="single">Single Line</button>
+                            <button class="mode-btn" data-mode="dialogue">Full Dialogue</button>
+                            <button class="mode-btn" data-mode="roleplay">Role Play</button>
+                        </div>
+                        
+                        <div id="rolePlaySetup" style="display: none;">
+                            <div class="role-selector">
+                                <p><strong>Choose your role:</strong></p>
+                                <div class="role-buttons">
+                                    <button class="role-btn" data-role="A">I am Speaker A</button>
+                                    <button class="role-btn" data-role="B">I am Speaker B</button>
+                                </div>
+                            </div>
+                            <p class="role-instruction" style="text-align: center; margin-top: 15px; font-size: 13px; opacity: 0.7;">
+                                💡 You speak your lines, then the system will automatically speak the other character's lines
+                            </p>
+                        </div>
+                        
+                        <div class="practice-text" id="practiceText">
+                            <p style="opacity: 0.6;">Select a line from transcript or click "Full Dialogue" mode...</p>
+                        </div>
+                        
+                        <div class="practice-controls">
+                            <button class="practice-btn" id="recordBtn" disabled>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                                    <line x1="12" y1="19" x2="12" y2="23"/>
+                                    <line x1="8" y1="23" x2="16" y2="23"/>
+                                </svg>
+                                <span>Record</span>
+                            </button>
+                            
+                            <button class="practice-btn" id="playOriginalBtn" disabled>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polygon points="5 3 19 12 5 21 5 3"/>
+                                </svg>
+                                <span>Play Original</span>
+                            </button>
+                            
+                            <button class="practice-btn" id="playRecordingBtn" disabled>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polygon points="5 3 19 12 5 21 5 3"/>
+                                </svg>
+                                <span>Play My Recording</span>
+                            </button>
+                        </div>
+                        
+                        <div class="recording-status" id="recordingStatus"></div>
+                        
+                        <div class="pronunciation-score" id="pronunciationScore" style="display: none;">
+                            <div class="score-circle">
+                                <span class="score-value" id="scoreValue">0</span>
+                                <span class="score-label">/ 100</span>
+                            </div>
+                            <div class="score-feedback" id="scoreFeedback"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="audio-section">
+                <audio id="audioPlayer" preload="metadata" style="display: none;">
+                    <source src="" type="audio/mpeg">
+                </audio>
+                
+                <div class="custom-player">
+                    <div class="progress-container">
+                        <div class="progress-bar">
+                            <div class="progress-filled" id="progressFilled"></div>
+                        </div>
+                        <div class="time-display">
+                            <span id="currentTime">0:00</span>
+                            <span class="separator">/</span>
+                            <span id="duration">0:00</span>
+                        </div>
+                    </div>
+                    
+                    <div class="controls">
+                        <button class="control-btn" id="prevBtn" title="Previous">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/>
+                            </svg>
+                        </button>
+                        
+                        <button class="control-btn play-btn" id="playBtn" title="Play/Pause">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" class="play-icon">
+                                <path d="M8 5v14l11-7z"/>
+                            </svg>
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" class="pause-icon" style="display: none;">
+                                <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+                            </svg>
+                            <span class="loading-spinner" style="display: none;">⏳</span>
+                        </button>
+                        
+                        <button class="control-btn" id="nextBtn" title="Next">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
+                            </svg>
+                        </button>
+                        
+                        <button class="control-btn" id="speedBtn" title="Speed">1x</button>
+                        
+                        <button class="control-btn" id="repeatBtn" title="A-B Repeat">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/>
+                            </svg>
+                        </button>
+                        
+                        <button class="control-btn" id="volumeBtn" title="Volume">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="audio-player" id="audioPlayerContainer" style="display: none;">
+            <div class="player-content">
+                <div class="player-info">
+                    <h3 id="currentTitle">Select an episode</h3>
+                    <span id="currentLevel" class="level-badge"></span>
+                </div>
+                <audio id="audioPlayerBottom" controls>
+                    <source src="" type="audio/mpeg">
+                </audio>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <script src="episodes.js" defer></script>
+    <script src="script.js" defer></script>
+    <script>
+        // Performance optimization: Hide loading screen
+        window.addEventListener('DOMContentLoaded', () => {
+            const loadingScreen = document.getElementById('loadingScreen');
+            const appContainer = document.getElementById('appContainer');
+            
+            // Use requestAnimationFrame for smooth transition
+            requestAnimationFrame(() => {
+                appContainer.classList.add('loaded');
+                setTimeout(() => {
+                    loadingScreen.style.display = 'none';
+                }, 300);
+            });
+        });
+    </script>
+        window.addEventListener('load', () => {
+            const loadingScreen = document.getElementById('loadingScreen');
+            const appContainer = document.querySelector('.app-container');
+            
+            setTimeout(() => {
+                loadingScreen.style.opacity = '0';
+                appContainer.style.opacity = '1';
+                setTimeout(() => loadingScreen.remove(), 500);
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
