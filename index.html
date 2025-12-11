@@ -253,20 +253,7 @@
     <script src="episodes.js" defer></script>
     <script src="script.js" defer></script>
     <script>
-        // Performance optimization: Hide loading screen
-        window.addEventListener('DOMContentLoaded', () => {
-            const loadingScreen = document.getElementById('loadingScreen');
-            const appContainer = document.getElementById('appContainer');
-            
-            // Use requestAnimationFrame for smooth transition
-            requestAnimationFrame(() => {
-                appContainer.classList.add('loaded');
-                setTimeout(() => {
-                    loadingScreen.style.display = 'none';
-                }, 300);
-            });
-        });
-    </script>
+        // Performance optimization: Hide loading screen after content loads
         window.addEventListener('load', () => {
             const loadingScreen = document.getElementById('loadingScreen');
             const appContainer = document.querySelector('.app-container');
