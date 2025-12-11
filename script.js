@@ -284,13 +284,12 @@ function playEpisode(episode) {
     }, 30000);
     
     audioPlayer.src = episode.mp3;
-    audioPlayer.preload = 'auto'; // Auto preload entire file for mobile compatibility
-    audioPlayer.load(); // Explicitly trigger load
+    audioPlayer.preload = 'none'; // Don't preload - wait for user tap (required for mobile)
     
-    console.log('Loading audio from:', episode.mp3);
+    console.log('Audio source set:', episode.mp3);
     
-    // Show loading notification
-    showNotification('⏳ Loading audio...');
+    // Show ready notification
+    showNotification('▶️ Tap play to start');
     
     // Setup Media Session API for background playback
     if ('mediaSession' in navigator) {
@@ -451,6 +450,11 @@ function setupCustomPlayer() {
     // Play/Pause
     playBtn.addEventListener('click', () => {
         if (audioPlayer.paused) {
+            // Load audio on first play (mobile requires user gesture)
+            if (audioPlayer.readyState === 0) {
+                showLoading();
+                audioPlayer.load();
+            }
             audioPlayer.play().catch(err => {
                 console.error('Play failed:', err);
                 hideLoading();
