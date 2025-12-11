@@ -235,10 +235,10 @@ function playEpisode(episode) {
     audioPlayer.pause();
     audioPlayer.currentTime = 0;
     audioPlayer.src = episode.mp3;
-    audioPlayer.preload = 'metadata'; // Preload metadata for faster start
+    audioPlayer.preload = 'auto'; // Preload full audio for smoother playback
     
-    // Show loading notification
-    showNotification('⏳ Loading audio...');
+    // Show loading notification (will auto-hide when ready)
+    showNotification('⏳ Loading audio from server... This may take 10-30 seconds on mobile');
     
     // Setup Media Session API for background playback
     if ('mediaSession' in navigator) {

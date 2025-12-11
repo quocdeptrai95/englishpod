@@ -1124,6 +1124,7 @@ audio::-webkit-media-controls-panel {
     
     .episode-detail {
         padding: 16px;
+        padding-bottom: 220px; /* Extra space on mobile for player */
         border-radius: 8px;
     }
     
@@ -1502,6 +1503,262 @@ audio::-webkit-media-controls-panel {
     text-align: center;
     border: 2px solid var(--accent);
 }
+
+.score-circle {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent) 0%, #4f46e5 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4);
+}
+
+.score-value {
+    font-size: 48px;
+    font-weight: 700;
+    color: white;
+}
+
+.score-label {
+    font-size: 18px;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.score-feedback {
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--text-primary);
+}
+
+.dialogue-line {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.dialogue-line:hover {
+    transform: translateX(4px);
+    opacity: 0.8;
+}
+
+@media (max-width: 600px) {
+    .notification {
+        bottom: 80px;
+        font-size: 13px;
+        padding: 10px 20px;
+    }
+    
+    .practice-mode-selector {
+        flex-direction: column;
+    }
+    
+    .mode-btn {
+        width: 100%;
+    }
+    
+    .role-selector {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .role-btn {
+        width: 100%;
+    }
+    
+    .practice-controls {
+        flex-direction: column;
+    }
+    
+    .practice-btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .score-circle {
+        width: 100px;
+        height: 100px;
+    }
+    
+    .score-value {
+        font-size: 40px;
+    }
+    
+    .vocab-word {
+        gap: 6px;
+    }
+    
+    .practice-vocab-btn {
+        padding: 3px;
+    }
+}
+order-radius: 12px;
+    margin-bottom: 20px;
+    min-height: 80px;
+    border: 2px solid var(--border);
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.full-dialogue p {
+    margin: 12px 0;
+    line-height: 1.6;
+}
+
+.practice-quote {
+    font-size: 16px;
+    line-height: 1.8;
+    color: var(--text-primary);
+    font-style: italic;
+}
+
+.practice-controls {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.practice-btn {
+    background: linear-gradient(135deg, var(--accent) 0%, #4f46e5 100%);
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.practice-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+}
+
+.practice-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.practice-btn.recording {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+.recording-status {
+    text-align: center;
+    min-height: 24px;
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+
+.pronunciation-score {
+    background: var(--bg-card);
+    padding: 30px;
+    border-radius: 12px;
+    text-align: center;
+    border: 2px solid var(--accent);
+}
+
+.score-circle {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent) 0%, #4f46e5 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4);
+}
+
+.score-value {
+    font-size: 48px;
+    font-weight: 700;
+    color: white;
+}
+
+.score-label {
+    font-size: 18px;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.score-feedback {
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--text-primary);
+}
+
+.dialogue-line {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.dialogue-line:hover {
+    transform: translateX(4px);
+    opacity: 0.8;
+}
+
+@media (max-width: 600px) {
+    .notification {
+        bottom: 80px;
+        font-size: 13px;
+        padding: 10px 20px;
+    }
+    
+    .practice-mode-selector {
+        flex-direction: column;
+    }
+    
+    .mode-btn {
+        width: 100%;
+    }
+    
+    .role-selector {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .role-btn {
+        width: 100%;
+    }
+    
+    .practice-controls {
+        flex-direction: column;
+    }
+    
+    .practice-btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .score-circle {
+        width: 100px;
+        height: 100px;
+    }
+    
+    .score-value {
+        font-size: 40px;
+    }
+    
+    .vocab-word {
+        gap: 6px;
+    }
+    
+    .practice-vocab-btn {
+        padding: 3px;
+    }
+}
+>>>>>>> 43afc22 (add new file)
 
 .score-circle {
     width: 120px;
