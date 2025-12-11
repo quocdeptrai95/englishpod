@@ -266,9 +266,6 @@ header p {
     color: var(--text-primary);
     letter-spacing: -0.01em;
     line-height: 1.4;
-}
-    font-weight: 600;
-    line-height: 1.4;
     transition: color var(--transition-fast);
 }
 
@@ -1124,7 +1121,6 @@ audio::-webkit-media-controls-panel {
     
     .episode-detail {
         padding: 16px;
-        padding-bottom: 220px; /* Extra space on mobile for player */
         border-radius: 8px;
     }
     
@@ -1594,7 +1590,11 @@ audio::-webkit-media-controls-panel {
         padding: 3px;
     }
 }
-order-radius: 12px;
+
+.full-dialogue {
+    background: var(--card-bg);
+    padding: 16px;
+    border-radius: 12px;
     margin-bottom: 20px;
     min-height: 80px;
     border: 2px solid var(--border);
@@ -1758,7 +1758,6 @@ order-radius: 12px;
         padding: 3px;
     }
 }
->>>>>>> 43afc22 (add new file)
 
 .score-circle {
     width: 120px;

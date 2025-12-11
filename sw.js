@@ -34,37 +34,57 @@ self.addEventListener('activate', event => {
 
 // Fetch event - serve from cache, fallback to network
 self.addEventListener('fetch', event => {
-    const url = new URL(event.request.url);
+    const url = event.request.url;
     
-    // Skip cross-origin requests (like archive.org)
-    if (url.origin !== location.origin) {
-        return;
+    // Skip cross-origin requests (like archive.org audio files) - let browser handle directly
+    if (!url.startsWith(self.location.origin)) {
+        console.log('SW: Skipping cross-origin:', url);
+        return fetch(event.request);
     }
     
     // Skip chunk files - load them fresh each time to avoid caching issues
-    if (url.pathname.includes('episodes-chunk-')) {
-        return;
+    if (url.includes('episodes-chunk-')) {
+        console.log('SW: Skipping chunk file:', url);
+        return fetch(event.request);
     }
 
     event.respondWith(
         caches.match(event.request)
             .then(response => {
+                // Return cached version if available
                 if (response) {
+                    console.log('SW: Serving from cache:', url);
                     return response;
                 }
-                return fetch(event.request).then(response => {
-                    // Only cache successful responses
-                    if (response && response.status === 200) {
-                        const responseToCache = response.clone();
-                        caches.open(CACHE_NAME).then(cache => {
-                            cache.put(event.request, responseToCache);
+                
+                console.log('SW: Fetching from network:', url);
+                // Otherwise fetch from network
+                return fetch(event.request)
+                    .then(response => {
+                        // Only cache successful responses
+                        if (response && response.status === 200 && response.type === 'basic') {
+                            const responseToCache = response.clone();
+                            caches.open(CACHE_NAME)
+                                .then(cache => {
+                                    cache.put(event.request, responseToCache);
+                                })
+                                .catch(err => {
+                                    console.log('SW: Cache write failed:', err);
+                                }); // Silently fail cache write
+                        }
+                        return response;
+                    })
+                    .catch(err => {
+                        // If fetch fails, return offline page or error
+                        return new Response('Network error', {
+                            status: 408,
+                            headers: { 'Content-Type': 'text/plain' }
                         });
-                    }
-                    return response;
-                }).catch(err => {
-                    console.log('Fetch failed for:', event.request.url, err);
-                    throw err;
-                });
+                    });
+            })
+            .catch(() => {
+                // If cache match fails, fetch anyway
+                return fetch(event.request);
             })
     );
 });

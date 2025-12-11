@@ -268,30 +268,81 @@ function playEpisode(episode) {
     // Reset audio player and start loading
     audioPlayer.pause();
     audioPlayer.currentTime = 0;
+    
+    // Clear any previous timeout
+    if (window.audioLoadTimeout) {
+        clearTimeout(window.audioLoadTimeout);
+    }
+    
+    // Set timeout to detect stuck loading (30 seconds)
+    window.audioLoadTimeout = setTimeout(() => {
+        if (audioPlayer.readyState < 2) { // HAVE_CURRENT_DATA
+            console.warn('Audio loading timeout after 30s');
+            hideLoading();
+            showNotification('⚠️ Loading timeout. Please check your connection and try again.');
+        }
+    }, 30000);
+    
     audioPlayer.src = episode.mp3;
-    audioPlayer.preload = 'metadata'; // Preload metadata for faster start
+    audioPlayer.preload = 'auto'; // Auto preload entire file for mobile compatibility
+    audioPlayer.load(); // Explicitly trigger load
+    
+    console.log('Loading audio from:', episode.mp3);
     
     // Show loading notification
     showNotification('⏳ Loading audio...');
     
     // Setup Media Session API for background playback
     if ('mediaSession' in navigator) {
-        navigator.mediaSession.metadata = new MediaMetadata({
-            title: episode.title,
-            artist: 'English',
-            album: episode.level,
-            artwork: [
-                { src: 'https://via.placeholder.com/96', sizes: '96x96', type: 'image/png' },
-                { src: 'https://via.placeholder.com/128', sizes: '128x128', type: 'image/png' },
-                { src: 'https://via.placeholder.com/192', sizes: '192x192', type: 'image/png' },
-                { src: 'https://via.placeholder.com/256', sizes: '256x256', type: 'image/png' },
-                { src: 'https://via.placeholder.com/384', sizes: '384x384', type: 'image/png' },
-                { src: 'https://via.placeholder.com/512', sizes: '512x512', type: 'image/png' }
-            ]
+        // Create a simple canvas icon for artwork
+        const canvas = document.createElement('canvas');
+        canvas.width = 512;
+        canvas.height = 512;
+        const ctx = canvas.getContext('2d');
+        
+        // Draw a gradient background
+        const gradient = ctx.createLinearGradient(0, 0, 512, 512);
+        gradient.addColorStop(0, '#667eea');
+        gradient.addColorStop(1, '#764ba2');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, 512, 512);
+        
+        // Draw episode number
+        ctx.fillStyle = 'white';
+        ctx.font = 'bold 120px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(episode.id.toString(), 256, 256);
+        
+        // Convert canvas to blob URL
+        canvas.toBlob(blob => {
+            const iconUrl = URL.createObjectURL(blob);
+            
+            navigator.mediaSession.metadata = new MediaMetadata({
+                title: episode.title,
+                artist: 'EnglishPod',
+                album: episode.level,
+                artwork: [
+                    { src: iconUrl, sizes: '512x512', type: 'image/png' }
+                ]
+            });
         });
+        
+        // Fallback if canvas fails
+        setTimeout(() => {
+            if (!navigator.mediaSession.metadata) {
+                navigator.mediaSession.metadata = new MediaMetadata({
+                    title: episode.title,
+                    artist: 'EnglishPod',
+                    album: episode.level
+                });
+            }
+        }, 100);
 
-        // Set up action handlers for background controls
-        navigator.mediaSession.setActionHandler('play', () => audioPlayer.play());
+        // Set up action handlers for background controls (locks, notifications)
+        navigator.mediaSession.setActionHandler('play', () => {
+            audioPlayer.play().catch(err => console.error('Media Session play failed:', err));
+        });
         navigator.mediaSession.setActionHandler('pause', () => audioPlayer.pause());
         navigator.mediaSession.setActionHandler('seekbackward', () => {
             audioPlayer.currentTime = Math.max(0, audioPlayer.currentTime - 10);
@@ -372,18 +423,33 @@ function setupCustomPlayer() {
     audioPlayer.addEventListener('loadstart', showLoading);
     
     audioPlayer.addEventListener('canplay', () => {
-        hideLoading();
-        if (audioPlayer.paused) {
-            playBtn.querySelector('.play-icon').style.display = 'block';
-        } else {
-            playBtn.querySelector('.pause-icon').style.display = 'block';
+        // Clear loading timeout
+        if (window.audioLoadTimeout) {
+            clearTimeout(window.audioLoadTimeout);
         }
+        
+        hideLoading();
+        console.log('Audio ready, readyState:', audioPlayer.readyState);
         showNotification('✅ Audio ready!');
+        
+        // Try to auto-play (may be blocked on mobile, but user can tap play button)
+        if (audioPlayer.paused) {
+            audioPlayer.play().catch(err => {
+                console.log('Autoplay blocked (normal on mobile):', err.message);
+                // Show play button for user to tap
+                playBtn.querySelector('.play-icon').style.display = 'block';
+                showNotification('▶️ Tap play to start');
+            });
+        }
     });
     
-    audioPlayer.addEventListener('error', () => {
+    audioPlayer.addEventListener('error', (e) => {
+        console.error('Audio error:', audioPlayer.error);
         hideLoading();
-        showNotification('❌ Failed to load audio');
+        const errorMsg = audioPlayer.error ? 
+            `Code: ${audioPlayer.error.code}, ${audioPlayer.error.message || 'Unknown error'}` : 
+            'Failed to load audio';
+        showNotification('❌ Audio error: ' + errorMsg);
     });
     
     audioPlayer.addEventListener('waiting', showLoading);
@@ -393,8 +459,9 @@ function setupCustomPlayer() {
     playBtn.addEventListener('click', () => {
         if (audioPlayer.paused) {
             audioPlayer.play().catch(err => {
-                // Silent fail
+                console.error('Play failed:', err);
                 hideLoading();
+                showNotification('❌ Cannot play: ' + err.message);
             });
         } else {
             audioPlayer.pause();
@@ -404,11 +471,21 @@ function setupCustomPlayer() {
     audioPlayer.addEventListener('play', () => {
         playBtn.querySelector('.play-icon').style.display = 'none';
         playBtn.querySelector('.pause-icon').style.display = 'block';
+        
+        // Update Media Session playback state for background playback
+        if ('mediaSession' in navigator) {
+            navigator.mediaSession.playbackState = 'playing';
+        }
     });
     
     audioPlayer.addEventListener('pause', () => {
         playBtn.querySelector('.play-icon').style.display = 'block';
         playBtn.querySelector('.pause-icon').style.display = 'none';
+        
+        // Update Media Session playback state
+        if ('mediaSession' in navigator) {
+            navigator.mediaSession.playbackState = 'paused';
+        }
     });
     
     // Time update
@@ -1264,4 +1341,32 @@ function levenshteinDistance(s1, s2) {
         if (i > 0) costs[s2.length] = lastValue;
     }
     return costs[s2.length];
+}
+
+// Prevent page from pausing audio when screen turns off or tab goes to background
+document.addEventListener('visibilitychange', () => {
+    // Don't do anything - let audio continue playing in background
+    // This is important for mobile background playback
+    if (document.hidden) {
+        console.log('Page hidden - audio continues in background');
+    } else {
+        console.log('Page visible - audio continues');
+    }
+});
+
+// Handle audio session interruptions (calls, other apps, etc.)
+if ('mediaSession' in navigator) {
+    // The browser will automatically pause/resume audio during interruptions
+    // We just need to update UI state
+    audioPlayer.addEventListener('pause', () => {
+        if ('mediaSession' in navigator) {
+            navigator.mediaSession.playbackState = 'paused';
+        }
+    });
+    
+    audioPlayer.addEventListener('play', () => {
+        if ('mediaSession' in navigator) {
+            navigator.mediaSession.playbackState = 'playing';
+        }
+    });
 }
