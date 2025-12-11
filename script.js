@@ -24,6 +24,9 @@ function showNotification(message) {
 const loadedChunks = new Set();
 const episodesData = new Map(); // id -> full episode data
 
+// Create alias for window.episodesIndex for easier access
+const episodesIndex = window.episodesIndex || [];
+
 // Load a chunk file
 async function loadChunk(chunkNumber) {
     if (loadedChunks.has(chunkNumber)) return;
