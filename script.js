@@ -766,6 +766,9 @@ async function loadVocab() {
     }
 
     vocabContent.innerHTML = vocabHTML;
+    
+    // Add translation functionality after rendering
+    setTimeout(() => addVocabTranslation(), 100);
 }
 
 // Text-to-Speech for vocabulary pronunciation (UK accent)
@@ -1350,3 +1353,63 @@ document.addEventListener('visibilitychange', () => {
         console.log('Page visible - audio continues');
     }
 });
+
+// Translation cache to avoid repeated API calls
+const translationCache = new Map();
+
+// Translate text to Vietnamese using MyMemory API (free, no key required)
+async function translateToVietnamese(text) {
+    // Check cache first
+    if (translationCache.has(text)) {
+        return translationCache.get(text);
+    }
+    
+    try {
+        const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|vi`);
+        const data = await response.json();
+        
+        if (data.responseStatus === 200 && data.responseData) {
+            const translation = data.responseData.translatedText;
+            translationCache.set(text, translation);
+            return translation;
+        }
+    } catch (err) {
+        console.error('Translation failed:', err);
+    }
+    
+    return null;
+}
+
+// Show translation tooltip
+function showTranslationTooltip(element, text, translation) {
+    // Remove existing tooltips
+    document.querySelectorAll('.translation-tooltip').forEach(t => t.remove());
+    
+    const tooltip = document.createElement('div');
+    tooltip.className = 'translation-tooltip';
+    tooltip.textContent = translation;
+    document.body.appendChild(tooltip);
+    
+    // Position tooltip near the element
+    const rect = element.getBoundingClientRect();
+    tooltip.style.left = rect.left + 'px';
+    tooltip.style.top = (rect.bottom + 5) + 'px';
+    
+    // Auto-hide after 5 seconds
+    setTimeout(() => tooltip.remove(), 5000);
+}
+
+// Add vocab word hover translation
+function addVocabTranslation() {
+    document.querySelectorAll('.vocab-word').forEach(wordCell => {
+        const text = wordCell.textContent.trim();
+        
+        wordCell.addEventListener('mouseenter', async () => {
+            const translation = await translateToVietnamese(text);
+            if (translation) {
+                showTranslationTooltip(wordCell, text, translation);
+            }
+        });
+    });
+}
+
