@@ -129,7 +129,7 @@ async function sendMessage() {
 
         const systemPrompt = `You are a friendly English learning assistant. Help users learn English through the EnglishPod lessons. ${context} Answer in Vietnamese when explaining, but provide English examples. Be concise and helpful.`;
         
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`, {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
