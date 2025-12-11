@@ -53,9 +53,15 @@ const transcriptContent = document.getElementById('transcriptContent');
 
 // Initialize when DOM is ready
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', renderEpisodes);
+    document.addEventListener('DOMContentLoaded', () => {
+        renderEpisodes();
+        // Preload first chunk for faster access to first 50 episodes
+        loadChunk(1).catch(() => {});
+    });
 } else {
     renderEpisodes();
+    // Preload first chunk for faster access to first 50 episodes
+    loadChunk(1).catch(() => {});
 }
 
 // Filter tabs
@@ -165,8 +171,27 @@ function renderEpisodes(append = false) {
                 
                 // Add click listener directly
                 card.addEventListener('click', async () => {
+                    // Show loading state
+                    const originalHTML = card.innerHTML;
+                    card.style.opacity = '0.5';
+                    card.style.pointerEvents = 'none';
+                    card.innerHTML = `
+                        <div class="episode-number">${ep.id}</div>
+                        <h3>${ep.title}</h3>
+                        <span class="level-badge">${ep.level}</span>
+                        <div style="text-align: center; margin-top: 10px; color: #6366f1;">Loading...</div>
+                    `;
+                    
                     const episode = await getEpisode(ep.id);
-                    if (episode) playEpisode(episode);
+                    if (episode) {
+                        playEpisode(episode);
+                    } else {
+                        // Restore original state if failed
+                        card.innerHTML = originalHTML;
+                        card.style.opacity = '1';
+                        card.style.pointerEvents = 'auto';
+                        showNotification('❌ Failed to load episode');
+                    }
                 });
                 
                 fragment.appendChild(card);
