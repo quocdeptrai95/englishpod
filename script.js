@@ -1,6 +1,46 @@
 let currentFilter = 'all';
-let displayedCount = 30; // Start with 30 episodes
+let displayedCount = 30;
 const LOAD_MORE_COUNT = 30;
+
+// Chunk loading system
+const loadedChunks = new Set();
+const episodesData = new Map(); // id -> full episode data
+
+// Load a chunk file
+async function loadChunk(chunkNumber) {
+    if (loadedChunks.has(chunkNumber)) return;
+    
+    return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = `episodes-chunk-${chunkNumber}.js`;
+        script.onload = () => {
+            // Get the chunk data
+            const chunkData = window[`episodesChunk${chunkNumber}`];
+            if (chunkData) {
+                chunkData.forEach(ep => episodesData.set(ep.id, ep));
+                loadedChunks.add(chunkNumber);
+            }
+            resolve();
+        };
+        script.onerror = reject;
+        document.head.appendChild(script);
+    });
+}
+
+// Get episode with auto-loading
+async function getEpisode(id) {
+    if (episodesData.has(id)) {
+        return episodesData.get(id);
+    }
+    
+    // Find which chunk this episode is in
+    const episodeIndex = episodesIndex.find(ep => ep.id === id);
+    if (!episodeIndex) return null;
+    
+    // Load the chunk
+    await loadChunk(episodeIndex.chunk);
+    return episodesData.get(id);
+}
 
 const episodesGrid = document.getElementById('episodesGrid');
 const episodeDetail = document.getElementById('episodeDetail');
@@ -89,8 +129,8 @@ showVocabBtn.addEventListener('click', () => {
 
 function renderEpisodes(append = false) {
     const filtered = currentFilter === 'all' 
-        ? episodes 
-        : episodes.filter(ep => ep.level === currentFilter);
+        ? episodesIndex 
+        : episodesIndex.filter(ep => ep.level === currentFilter);
 
     // Reset displayed count if not appending
     if (!append) {
@@ -124,9 +164,9 @@ function renderEpisodes(append = false) {
                 `;
                 
                 // Add click listener directly
-                card.addEventListener('click', () => {
-                    const episode = episodes.find(e => e.id === ep.id);
-                    playEpisode(episode);
+                card.addEventListener('click', async () => {
+                    const episode = await getEpisode(ep.id);
+                    if (episode) playEpisode(episode);
                 });
                 
                 fragment.appendChild(card);
