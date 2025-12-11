@@ -765,7 +765,7 @@ function initializePracticeControls() {
                 startFullDialoguePractice();
             } else if (practiceMode === 'roleplay') {
                 if (rolePlaySetup) rolePlaySetup.style.display = 'block';
-                practiceTextEl.innerHTML = '<p style="opacity: 0.6;">Select your role to start role play...</p>';
+                startRolePlay(); // Setup role selector with dynamic speakers
                 recordBtn.disabled = true;
                 playOriginalBtn.disabled = true;
             } else {
@@ -777,15 +777,8 @@ function initializePracticeControls() {
         });
     });
     
-    // Role selector
-    document.querySelectorAll('.role-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            rolePlayRole = btn.dataset.role;
-            startRolePlay();
-        });
-    });
+    // Note: Role selector event listeners are attached dynamically in startRolePlay()
+    // to handle dynamic speaker detection
     
     // Record button
     recordBtn.addEventListener('click', handleRecordClick);
