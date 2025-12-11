@@ -226,10 +226,19 @@ function playEpisode(episode) {
     detailTitle.textContent = episode.title;
     detailLevel.textContent = episode.level;
     
-    // Reset audio player
+    // Show episode detail immediately
+    episodesGrid.style.display = 'none';
+    episodeDetail.style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    // Reset audio player and start loading
     audioPlayer.pause();
     audioPlayer.currentTime = 0;
     audioPlayer.src = episode.mp3;
+    audioPlayer.preload = 'metadata'; // Preload metadata for faster start
+    
+    // Show loading notification
+    showNotification('⏳ Loading audio...');
     
     // Setup Media Session API for background playback
     if ('mediaSession' in navigator) {
@@ -285,14 +294,7 @@ function playEpisode(episode) {
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
     document.getElementById('transcriptTab').classList.add('active');
     
-    // Show detail, hide grid
-    episodesGrid.style.display = 'none';
-    episodeDetail.style.display = 'block';
-    
-    // Scroll to top
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    
-    // Setup custom player controls
+    // Setup custom player controls (will handle loading state)
     setupCustomPlayer();
     
     // Initialize practice controls
@@ -342,6 +344,12 @@ function setupCustomPlayer() {
         } else {
             playBtn.querySelector('.pause-icon').style.display = 'block';
         }
+        showNotification('✅ Audio ready!');
+    });
+    
+    audioPlayer.addEventListener('error', () => {
+        hideLoading();
+        showNotification('❌ Failed to load audio');
     });
     
     audioPlayer.addEventListener('waiting', showLoading);
