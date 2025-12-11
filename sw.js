@@ -1,9 +1,10 @@
-const CACHE_NAME = 'english-v1';
+const CACHE_NAME = 'english-v2';
 const urlsToCache = [
     './',
     './index.html',
     './style.css',
     './script.js',
+    './episodes-index.js',
     'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap'
 ];
 
@@ -33,16 +34,15 @@ self.addEventListener('activate', event => {
 
 // Fetch event - serve from cache, fallback to network
 self.addEventListener('fetch', event => {
-    // Skip episodes.js - too large to cache initially
-    if (event.request.url.includes('episodes.js')) {
-        event.respondWith(
-            caches.open(CACHE_NAME).then(cache => {
-                return fetch(event.request).then(response => {
-                    cache.put(event.request, response.clone());
-                    return response;
-                }).catch(() => cache.match(event.request));
-            })
-        );
+    const url = new URL(event.request.url);
+    
+    // Skip cross-origin requests (like archive.org)
+    if (url.origin !== location.origin) {
+        return;
+    }
+    
+    // Skip chunk files - load them fresh each time to avoid caching issues
+    if (url.pathname.includes('episodes-chunk-')) {
         return;
     }
 
@@ -53,14 +53,17 @@ self.addEventListener('fetch', event => {
                     return response;
                 }
                 return fetch(event.request).then(response => {
-                    // Cache audio files and other resources
-                    if (response.status === 200) {
+                    // Only cache successful responses
+                    if (response && response.status === 200) {
                         const responseToCache = response.clone();
                         caches.open(CACHE_NAME).then(cache => {
                             cache.put(event.request, responseToCache);
                         });
                     }
                     return response;
+                }).catch(err => {
+                    console.log('Fetch failed for:', event.request.url, err);
+                    throw err;
                 });
             })
     );
