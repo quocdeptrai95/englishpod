@@ -2,6 +2,24 @@ let currentFilter = 'all';
 let displayedCount = 30;
 const LOAD_MORE_COUNT = 30;
 
+// Notification function
+function showNotification(message) {
+    // Remove existing notification
+    const existing = document.querySelector('.notification');
+    if (existing) existing.remove();
+    
+    const notification = document.createElement('div');
+    notification.className = 'notification';
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => notification.classList.add('show'), 10);
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => notification.remove(), 300);
+    }, 2000);
+}
+
 // Chunk loading system
 const loadedChunks = new Set();
 const episodesData = new Map(); // id -> full episode data
@@ -524,23 +542,6 @@ function setupCustomPlayer() {
     
     function clearRepeatMarkers() {
         document.querySelectorAll('.repeat-marker, .repeat-region').forEach(m => m.remove());
-    }
-    
-    function showNotification(message) {
-        // Remove existing notification
-        const existing = document.querySelector('.notification');
-        if (existing) existing.remove();
-        
-        const notification = document.createElement('div');
-        notification.className = 'notification';
-        notification.textContent = message;
-        document.body.appendChild(notification);
-        
-        setTimeout(() => notification.classList.add('show'), 10);
-        setTimeout(() => {
-            notification.classList.remove('show');
-            setTimeout(() => notification.remove(), 300);
-        }, 2000);
     }
     
     // Speed control
