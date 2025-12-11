@@ -269,19 +269,6 @@ function playEpisode(episode) {
     audioPlayer.pause();
     audioPlayer.currentTime = 0;
     
-    // Clear any previous timeout
-    if (window.audioLoadTimeout) {
-        clearTimeout(window.audioLoadTimeout);
-    }
-    
-    // Set timeout to detect stuck loading (30 seconds)
-    window.audioLoadTimeout = setTimeout(() => {
-        if (audioPlayer.readyState < 2) { // HAVE_CURRENT_DATA
-            console.warn('Audio loading timeout after 30s');
-            showNotification('⚠️ Loading timeout. Please check your connection and try again.');
-        }
-    }, 30000);
-    
     audioPlayer.src = episode.mp3;
     audioPlayer.preload = 'none'; // Don't preload - wait for user tap (required for mobile)
     
