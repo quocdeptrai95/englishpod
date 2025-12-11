@@ -797,7 +797,12 @@ function initializePracticeControls() {
                 if (rolePlaySetup) rolePlaySetup.style.display = 'none';
                 startFullDialoguePractice();
             } else if (practiceMode === 'roleplay') {
-                if (rolePlaySetup) rolePlaySetup.style.display = 'block';
+                // Show role selector and reset
+                if (rolePlaySetup) {
+                    rolePlaySetup.style.display = 'block';
+                    const roleSelector = rolePlaySetup.querySelector('.role-selector');
+                    if (roleSelector) roleSelector.style.display = 'block';
+                }
                 startRolePlay(); // Setup role selector with dynamic speakers
                 recordBtn.disabled = true;
                 playOriginalBtn.disabled = true;
@@ -968,6 +973,10 @@ function startRolePlay() {
                 btn.classList.add('active');
                 rolePlayRole = btn.dataset.role;
                 rolePlayCurrentIndex = 0;
+                
+                // Hide role selector after selection
+                if (roleSelector) roleSelector.style.display = 'none';
+                
                 showNextRolePlayLine();
             });
         });
