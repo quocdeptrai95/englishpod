@@ -1,6 +1,6 @@
 // Google Gemini AI Assistant Integration (FREE!)
 // Get your FREE API key here: https://aistudio.google.com/app/apikey
-const GEMINI_API_KEY = ''; // User will add their key
+const GEMINI_API_KEY = 'AIzaSyBI1M-kBo4PowREUbykEE7JkMHz8XLbCVA';
 
 let chatHistory = [];
 let isChatOpen = false;
@@ -129,7 +129,7 @@ async function sendMessage() {
 
         const systemPrompt = `You are a friendly English learning assistant. Help users learn English through the EnglishPod lessons. ${context} Answer in Vietnamese when explaining, but provide English examples. Be concise and helpful.`;
         
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
