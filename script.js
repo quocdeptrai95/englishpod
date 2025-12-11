@@ -11,6 +11,15 @@ async function loadChunk(chunkNumber) {
     if (loadedChunks.has(chunkNumber)) return;
     
     return new Promise((resolve, reject) => {
+        // Check if chunk data already exists in window
+        const existingChunk = window[`episodesChunk${chunkNumber}`];
+        if (existingChunk) {
+            existingChunk.forEach(ep => episodesData.set(ep.id, ep));
+            loadedChunks.add(chunkNumber);
+            resolve();
+            return;
+        }
+        
         const script = document.createElement('script');
         script.src = `episodes-chunk-${chunkNumber}.js`;
         script.onload = () => {
