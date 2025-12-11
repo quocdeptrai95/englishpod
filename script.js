@@ -55,13 +55,15 @@ const transcriptContent = document.getElementById('transcriptContent');
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         renderEpisodes();
-        // Preload first chunk for faster access to first 50 episodes
+        // Preload first 2 chunks for faster access to first 100 episodes
         loadChunk(1).catch(() => {});
+        setTimeout(() => loadChunk(2).catch(() => {}), 500);
     });
 } else {
     renderEpisodes();
-    // Preload first chunk for faster access to first 50 episodes
+    // Preload first 2 chunks for faster access to first 100 episodes
     loadChunk(1).catch(() => {});
+    setTimeout(() => loadChunk(2).catch(() => {}), 500);
 }
 
 // Filter tabs
@@ -235,10 +237,10 @@ function playEpisode(episode) {
     audioPlayer.pause();
     audioPlayer.currentTime = 0;
     audioPlayer.src = episode.mp3;
-    audioPlayer.preload = 'auto'; // Preload full audio for smoother playback
+    audioPlayer.preload = 'metadata'; // Preload metadata for faster start
     
-    // Show loading notification (will auto-hide when ready)
-    showNotification('⏳ Loading audio from server... This may take 10-30 seconds on mobile');
+    // Show loading notification
+    showNotification('⏳ Loading audio...');
     
     // Setup Media Session API for background playback
     if ('mediaSession' in navigator) {
