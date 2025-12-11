@@ -67,7 +67,7 @@ function createChatWidget() {
             </div>
 
             <div class="chat-footer">
-                Powered by Google Gemini (Free)
+                Powered by Google Gemini
             </div>
         </div>
     `;
