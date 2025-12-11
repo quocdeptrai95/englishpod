@@ -802,9 +802,33 @@ function initializePracticeControls() {
     // Play recorded audio
     playRecordingBtn.addEventListener('click', () => {
         if (recordedBlob) {
+            playRecordingBtn.disabled = true;
+            playRecordingBtn.textContent = 'Playing...';
+            
             const audioUrl = URL.createObjectURL(recordedBlob);
             const audio = new Audio(audioUrl);
-            audio.play();
+            
+            audio.onended = () => {
+                URL.revokeObjectURL(audioUrl);
+                playRecordingBtn.disabled = false;
+                playRecordingBtn.textContent = '▶ Play My Recording';
+            };
+            
+            audio.onerror = () => {
+                URL.revokeObjectURL(audioUrl);
+                playRecordingBtn.disabled = false;
+                playRecordingBtn.textContent = '▶ Play My Recording';
+                showNotification('❌ Cannot play recording');
+            };
+            
+            audio.play().catch(err => {
+                URL.revokeObjectURL(audioUrl);
+                playRecordingBtn.disabled = false;
+                playRecordingBtn.textContent = '▶ Play My Recording';
+                showNotification('❌ Cannot play recording');
+            });
+        } else {
+            showNotification('❌ No recording available. Please record first.');
         }
     });
 }
