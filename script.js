@@ -430,17 +430,10 @@ function setupCustomPlayer() {
         
         hideLoading();
         console.log('Audio ready, readyState:', audioPlayer.readyState);
-        showNotification('✅ Audio ready!');
+        showNotification('▶️ Ready! Tap play to start');
         
-        // Try to auto-play (may be blocked on mobile, but user can tap play button)
-        if (audioPlayer.paused) {
-            audioPlayer.play().catch(err => {
-                console.log('Autoplay blocked (normal on mobile):', err.message);
-                // Show play button for user to tap
-                playBtn.querySelector('.play-icon').style.display = 'block';
-                showNotification('▶️ Tap play to start');
-            });
-        }
+        // Don't auto-play - let user tap play button (required for mobile)
+        playBtn.querySelector('.play-icon').style.display = 'block';
     });
     
     audioPlayer.addEventListener('error', (e) => {
