@@ -278,7 +278,6 @@ function playEpisode(episode) {
     window.audioLoadTimeout = setTimeout(() => {
         if (audioPlayer.readyState < 2) { // HAVE_CURRENT_DATA
             console.warn('Audio loading timeout after 30s');
-            hideLoading();
             showNotification('⚠️ Loading timeout. Please check your connection and try again.');
         }
     }, 30000);

@@ -1,6 +1,6 @@
-// ChatGPT Assistant Integration
-// Add your OpenAI API key here (get from: https://platform.openai.com/api-keys)
-const OPENAI_API_KEY = ''; // User will add their key
+// Google Gemini AI Assistant Integration (FREE!)
+// Get your FREE API key here: https://aistudio.google.com/app/apikey
+const GEMINI_API_KEY = ''; // User will add their key
 
 let chatHistory = [];
 let isChatOpen = false;
@@ -67,7 +67,7 @@ function createChatWidget() {
             </div>
 
             <div class="chat-footer">
-                Powered by ChatGPT
+                Powered by Google Gemini (Free)
             </div>
         </div>
     `;
@@ -103,8 +103,8 @@ async function sendMessage() {
     
     if (!message) return;
     
-    if (!OPENAI_API_KEY) {
-        addMessage('Please add your OpenAI API key in chatbot.js', 'assistant', true);
+    if (!GEMINI_API_KEY) {
+        addMessage('⚠️ Vui lòng thêm Gemini API key (FREE) vào chatbot.js\n\nLấy key tại: https://aistudio.google.com/app/apikey', 'assistant', true);
         return;
     }
 
@@ -122,34 +122,40 @@ async function sendMessage() {
         // Build context from current episode
         const context = buildContext();
         
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        // Build conversation history for Gemini
+        const conversationText = chatHistory.map(msg => 
+            `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`
+        ).join('\n\n');
+
+        const systemPrompt = `You are a friendly English learning assistant. Help users learn English through the EnglishPod lessons. ${context} Answer in Vietnamese when explaining, but provide English examples. Be concise and helpful.`;
+        
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${OPENAI_API_KEY}`
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                model: 'gpt-4o-mini',
-                messages: [
-                    {
-                        role: 'system',
-                        content: `You are a friendly English learning assistant. Help users learn English through the EnglishPod lessons. ${context} Answer in Vietnamese when explaining, but provide English examples. Be concise and helpful.`
-                    },
-                    ...chatHistory
-                ],
-                temperature: 0.7,
-                max_tokens: 500
+                contents: [{
+                    parts: [{
+                        text: `${systemPrompt}\n\nConversation:\n${conversationText}`
+                    }]
+                }],
+                generationConfig: {
+                    temperature: 0.7,
+                    maxOutputTokens: 500
+                }
             })
         });
 
         removeTypingIndicator(typingId);
 
         if (!response.ok) {
-            throw new Error(`API error: ${response.status}`);
+            const error = await response.text();
+            throw new Error(`API error: ${response.status} - ${error}`);
         }
 
         const data = await response.json();
-        const reply = data.choices[0].message.content;
+        const reply = data.candidates[0].content.parts[0].text;
 
         // Add to history
         chatHistory.push({ role: 'assistant', content: reply });
@@ -159,8 +165,8 @@ async function sendMessage() {
 
     } catch (error) {
         removeTypingIndicator(typingId);
-        console.error('ChatGPT error:', error);
-        addMessage('Sorry, I encountered an error. Please try again.', 'assistant', true);
+        console.error('Gemini error:', error);
+        addMessage('Xin lỗi, có lỗi xảy ra. Vui lòng thử lại.\n\n' + error.message, 'assistant', true);
     }
 }
 
