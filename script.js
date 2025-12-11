@@ -1353,20 +1353,3 @@ document.addEventListener('visibilitychange', () => {
         console.log('Page visible - audio continues');
     }
 });
-
-// Handle audio session interruptions (calls, other apps, etc.)
-if ('mediaSession' in navigator) {
-    // The browser will automatically pause/resume audio during interruptions
-    // We just need to update UI state
-    audioPlayer.addEventListener('pause', () => {
-        if ('mediaSession' in navigator) {
-            navigator.mediaSession.playbackState = 'paused';
-        }
-    });
-    
-    audioPlayer.addEventListener('play', () => {
-        if ('mediaSession' in navigator) {
-            navigator.mediaSession.playbackState = 'playing';
-        }
-    });
-}
