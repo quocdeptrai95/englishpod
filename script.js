@@ -24,8 +24,10 @@ function showNotification(message) {
 const loadedChunks = new Set();
 const episodesData = new Map(); // id -> full episode data
 
-// Create alias for window.episodesIndex for easier access
-const episodesIndex = window.episodesIndex || [];
+// Function to get episodes index (handles async loading)
+function getEpisodesIndex() {
+    return window.episodesIndex || [];
+}
 
 // Load a chunk file
 async function loadChunk(chunkNumber) {
@@ -64,7 +66,7 @@ async function getEpisode(id) {
     }
     
     // Find which chunk this episode is in
-    const episodeIndex = episodesIndex.find(ep => ep.id === id);
+    const episodeIndex = getEpisodesIndex().find(ep => ep.id === id);
     if (!episodeIndex) return null;
     
     // Load the chunk
@@ -81,21 +83,22 @@ const showBtn = document.getElementById('showBtn');
 const closeBtn = document.getElementById('closeBtn');
 const transcriptContent = document.getElementById('transcriptContent');
 
+// Initialize app
+function initApp() {
+    // Main title click to go home
+    const mainTitle = document.getElementById('mainTitle');
+    if (mainTitle) {
+        mainTitle.addEventListener('click', () => location.reload());
+    }
+    
+    renderEpisodes();
+}
+
 // Initialize when DOM is ready
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        renderEpisodes();
-        // Preload all chunks in background for instant access to all 365 episodes
-        for (let i = 1; i <= 8; i++) {
-            setTimeout(() => loadChunk(i).catch(() => {}), i * 100);
-        }
-    });
+    document.addEventListener('DOMContentLoaded', initApp);
 } else {
-    renderEpisodes();
-    // Preload all chunks in background for instant access to all 365 episodes
-    for (let i = 1; i <= 8; i++) {
-        setTimeout(() => loadChunk(i).catch(() => {}), i * 100);
-    }
+    initApp();
 }
 
 // Filter tabs
@@ -113,6 +116,14 @@ closeBtn.addEventListener('click', () => {
     episodeDetail.style.display = 'none';
     episodesGrid.style.display = 'grid';
     audioPlayer.pause();
+    
+    // Cleanup: Stop recording if active
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+        if (mediaRecorder.stream) {
+            mediaRecorder.stream.getTracks().forEach(track => track.stop());
+        }
+    }
 });
 
 // Tab switching
@@ -168,6 +179,14 @@ showVocabBtn.addEventListener('click', () => {
 });
 
 function renderEpisodes(append = false) {
+    const episodesIndex = getEpisodesIndex();
+    
+    // Wait for episodes index to load if not ready yet
+    if (!episodesIndex || episodesIndex.length === 0) {
+        setTimeout(() => renderEpisodes(append), 50);
+        return;
+    }
+    
     const filtered = currentFilter === 'all' 
         ? episodesIndex 
         : episodesIndex.filter(ep => ep.level === currentFilter);
@@ -175,28 +194,22 @@ function renderEpisodes(append = false) {
     // Reset displayed count if not appending
     if (!append) {
         displayedCount = 30;
-        // Show skeleton loading
-        episodesGrid.innerHTML = Array(12).fill(0).map(() => `
-            <div class="skeleton skeleton-card">
-                <div class="skeleton-text short"></div>
-                <div class="skeleton-text long"></div>
-                <div class="skeleton-text short"></div>
-            </div>
-        `).join('');
+        // Show skeleton loading (minimal HTML for faster render)
+        episodesGrid.innerHTML = '<div class="skeleton skeleton-card"></div>'.repeat(12);
     }
 
-    // Render actual content with slight delay for smooth transition
+    // Render actual content immediately for better performance
     requestAnimationFrame(() => {
-        setTimeout(() => {
-            const fragment = document.createDocumentFragment();
-            const toDisplay = filtered.slice(0, displayedCount);
-            
-            toDisplay.forEach((ep, index) => {
-                const card = document.createElement('div');
-                card.className = 'episode-card';
-                card.dataset.id = ep.id;
-                card.style.opacity = '0';
-                card.style.animation = `fadeIn 0.3s ease-out ${append ? 0 : index * 20}ms forwards`;
+        const fragment = document.createDocumentFragment();
+        const toDisplay = filtered.slice(0, displayedCount);
+        
+        toDisplay.forEach((ep, index) => {
+            const card = document.createElement('div');
+            card.className = 'episode-card';
+            card.dataset.id = ep.id;
+            card.style.opacity = '0';
+            // Reduced animation delay for faster perceived loading
+            card.style.animation = `fadeIn 0.2s ease-out ${append ? 0 : Math.min(index * 10, 200)}ms forwards`;
                 card.innerHTML = `
                     <div class="episode-number">${ep.id}</div>
                     <h3>${ep.title}</h3>
@@ -248,7 +261,6 @@ function renderEpisodes(append = false) {
                 };
                 episodesGrid.appendChild(loadMoreBtn);
             }
-        }, append ? 0 : 100);
     });
 }
 
@@ -270,9 +282,8 @@ function playEpisode(episode) {
     audioPlayer.currentTime = 0;
     
     audioPlayer.src = episode.mp3;
-    audioPlayer.preload = 'none'; // Don't preload - wait for user tap (required for mobile)
-    
-    console.log('Audio source set:', episode.mp3);
+    audioPlayer.preload = 'auto'; // Load audio data for instant playback
+    audioPlayer.load(); // Force load the audio
     
     // Show ready notification
     showNotification('▶️ Tap play to start');
@@ -301,7 +312,13 @@ function playEpisode(episode) {
         
         // Convert canvas to blob URL
         canvas.toBlob(blob => {
+            // Revoke previous artwork URL if exists
+            if (window.currentArtworkUrl) {
+                URL.revokeObjectURL(window.currentArtworkUrl);
+            }
+            
             const iconUrl = URL.createObjectURL(blob);
+            window.currentArtworkUrl = iconUrl;
             
             navigator.mediaSession.metadata = new MediaMetadata({
                 title: episode.title,
@@ -326,7 +343,7 @@ function playEpisode(episode) {
 
         // Set up action handlers for background controls (locks, notifications)
         navigator.mediaSession.setActionHandler('play', () => {
-            audioPlayer.play().catch(err => console.error('Media Session play failed:', err));
+            audioPlayer.play().catch(() => {}); // Silently fail
         });
         navigator.mediaSession.setActionHandler('pause', () => audioPlayer.pause());
         navigator.mediaSession.setActionHandler('seekbackward', () => {
@@ -371,7 +388,14 @@ function playEpisode(episode) {
     initializePracticeControls();
 }
 
+// Flag to prevent duplicate event listeners
+let playerInitialized = false;
+
 function setupCustomPlayer() {
+    // Only setup event listeners once to prevent memory leaks
+    if (playerInitialized) return;
+    playerInitialized = true;
+    
     const playBtn = document.getElementById('playBtn');
     const prevBtn = document.getElementById('prevBtn');
     const nextBtn = document.getElementById('nextBtn');
@@ -402,27 +426,39 @@ function setupCustomPlayer() {
     const hideLoading = () => {
         if (loadingSpinner) loadingSpinner.style.display = 'none';
         playBtn.disabled = false;
+        // Restore play icon if audio is paused
+        if (audioPlayer.paused) {
+            playBtn.querySelector('.play-icon').style.display = 'block';
+            playBtn.querySelector('.pause-icon').style.display = 'none';
+        } else {
+            playBtn.querySelector('.play-icon').style.display = 'none';
+            playBtn.querySelector('.pause-icon').style.display = 'block';
+        }
     };
     
     // Audio loading events
-    audioPlayer.addEventListener('loadstart', showLoading);
+    audioPlayer.addEventListener('loadstart', () => {
+        showLoading();
+        // Safety timeout - hide loading after 2s even if canplay doesn't fire
+        window.audioLoadTimeout = setTimeout(() => {
+            hideLoading();
+        }, 2000);
+    });
     
-    audioPlayer.addEventListener('canplay', () => {
+    const onAudioReady = () => {
         // Clear loading timeout
         if (window.audioLoadTimeout) {
             clearTimeout(window.audioLoadTimeout);
         }
         
         hideLoading();
-        console.log('Audio ready, readyState:', audioPlayer.readyState);
         showNotification('▶️ Ready! Tap play to start');
-        
-        // Don't auto-play - let user tap play button (required for mobile)
-        playBtn.querySelector('.play-icon').style.display = 'block';
-    });
+    };
+    
+    audioPlayer.addEventListener('canplay', onAudioReady);
+    audioPlayer.addEventListener('loadeddata', onAudioReady);
     
     audioPlayer.addEventListener('error', (e) => {
-        console.error('Audio error:', audioPlayer.error);
         hideLoading();
         const errorMsg = audioPlayer.error ? 
             `Code: ${audioPlayer.error.code}, ${audioPlayer.error.message || 'Unknown error'}` : 
@@ -441,8 +477,14 @@ function setupCustomPlayer() {
                 showLoading();
                 audioPlayer.load();
             }
-            audioPlayer.play().catch(err => {
-                console.error('Play failed:', err);
+            
+            // Show loading while waiting for play to start
+            showLoading();
+            
+            audioPlayer.play().then(() => {
+                // Play succeeded, make sure loading is hidden
+                hideLoading();
+            }).catch(err => {
                 hideLoading();
                 showNotification('❌ Cannot play: ' + err.message);
             });
@@ -738,9 +780,37 @@ async function loadVocab() {
     }
 
     vocabContent.innerHTML = vocabHTML;
+}
+
+// Get best UK female voice
+function getUKFemaleVoice() {
+    const voices = window.speechSynthesis.getVoices();
     
-    // Add translation functionality after rendering
-    setTimeout(() => addVocabTranslation(), 100);
+    // Priority 1: Female UK voices
+    let voice = voices.find(v => 
+        (v.lang === 'en-GB' || v.lang.startsWith('en-GB')) && 
+        (v.name.includes('Female') || v.name.includes('female'))
+    );
+    
+    // Priority 2: Any female voice with UK in name
+    if (!voice) {
+        voice = voices.find(v => 
+            v.name.toLowerCase().includes('uk') && 
+            (v.name.includes('Female') || v.name.includes('female'))
+        );
+    }
+    
+    // Priority 3: Google UK Female
+    if (!voice) {
+        voice = voices.find(v => v.name.includes('Google UK English Female'));
+    }
+    
+    // Priority 4: Any UK voice
+    if (!voice) {
+        voice = voices.find(v => v.lang === 'en-GB' || v.lang.startsWith('en-GB'));
+    }
+    
+    return voice;
 }
 
 // Text-to-Speech for vocabulary pronunciation (UK accent)
@@ -754,11 +824,8 @@ function speakWord(word) {
         utterance.rate = 0.8; // Slightly slower for clarity
         utterance.pitch = 1;
         
-        // Try to find UK English voice
-        const voices = window.speechSynthesis.getVoices();
-        const ukVoice = voices.find(voice => 
-            voice.lang === 'en-GB' || voice.lang.startsWith('en-GB')
-        );
+        // Use UK female voice
+        const ukVoice = getUKFemaleVoice();
         if (ukVoice) {
             utterance.voice = ukVoice;
         }
@@ -819,23 +886,15 @@ let pronunciationScore = null;
 let scoreValue = null;
 let scoreFeedback = null;
 let practiceTextEl = null;
+let practiceControlsInitialized = false;
 
-// Initialize Speech Recognition for pronunciation scoring
-let recognition = null;
-if ('webkitSpeechRecognition' in window) {
-    recognition = new webkitSpeechRecognition();
-    recognition.continuous = false;
-    recognition.interimResults = false;
-    recognition.lang = 'en-US';
-} else if ('SpeechRecognition' in window) {
-    recognition = new SpeechRecognition();
-    recognition.continuous = false;
-    recognition.interimResults = false;
-    recognition.lang = 'en-US';
-}
+// Pronunciation scoring removed - not needed
 
 // Initialize practice controls after DOM loads
 function initializePracticeControls() {
+    // Only initialize once to prevent duplicate event listeners
+    if (practiceControlsInitialized) return;
+    
     recordBtn = document.getElementById('recordBtn');
     playOriginalBtn = document.getElementById('playOriginalBtn');
     playRecordingBtn = document.getElementById('playRecordingBtn');
@@ -849,6 +908,8 @@ function initializePracticeControls() {
         // Controls not found
         return;
     }
+    
+    practiceControlsInitialized = true;
     
     // Practice mode selector
     document.querySelectorAll('.mode-btn').forEach(btn => {
@@ -890,9 +951,18 @@ function initializePracticeControls() {
     // Play original audio
     playOriginalBtn.addEventListener('click', () => {
         if (!practiceText) return;
+        window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(practiceText);
         utterance.lang = 'en-GB';
         utterance.rate = 0.9;
+        utterance.pitch = 1;
+        
+        // Use UK female voice
+        const ukVoice = getUKFemaleVoice();
+        if (ukVoice) {
+            utterance.voice = ukVoice;
+        }
+        
         window.speechSynthesis.speak(utterance);
     });
     
@@ -900,10 +970,21 @@ function initializePracticeControls() {
     playRecordingBtn.addEventListener('click', () => {
         if (recordedBlob) {
             playRecordingBtn.disabled = true;
-            playRecordingBtn.textContent = 'Playing...';
+            playRecordingBtn.textContent = 'Loading...';
             
             const audioUrl = URL.createObjectURL(recordedBlob);
             const audio = new Audio(audioUrl);
+            
+            // Wait for audio to be ready before playing
+            audio.onloadeddata = () => {
+                playRecordingBtn.textContent = 'Playing...';
+                audio.play().catch(err => {
+                    URL.revokeObjectURL(audioUrl);
+                    playRecordingBtn.disabled = false;
+                    playRecordingBtn.textContent = '▶ Play My Recording';
+                    showNotification('❌ Cannot play recording: ' + err.message);
+                });
+            };
             
             audio.onended = () => {
                 URL.revokeObjectURL(audioUrl);
@@ -911,19 +992,15 @@ function initializePracticeControls() {
                 playRecordingBtn.textContent = '▶ Play My Recording';
             };
             
-            audio.onerror = () => {
+            audio.onerror = (e) => {
                 URL.revokeObjectURL(audioUrl);
                 playRecordingBtn.disabled = false;
                 playRecordingBtn.textContent = '▶ Play My Recording';
-                showNotification('❌ Cannot play recording');
+                showNotification('❌ Cannot play recording - format not supported');
             };
             
-            audio.play().catch(err => {
-                URL.revokeObjectURL(audioUrl);
-                playRecordingBtn.disabled = false;
-                playRecordingBtn.textContent = '▶ Play My Recording';
-                showNotification('❌ Cannot play recording');
-            });
+            // Start loading the audio
+            audio.load();
         } else {
             showNotification('❌ No recording available. Please record first.');
         }
@@ -1143,6 +1220,13 @@ function speakLinesSequentially(lines, index, callback) {
     const utterance = new SpeechSynthesisUtterance(line.text);
     utterance.lang = 'en-GB';
     utterance.rate = 0.9;
+    utterance.pitch = 1;
+    
+    // Use UK female voice
+    const ukVoice = getUKFemaleVoice();
+    if (ukVoice) {
+        utterance.voice = ukVoice;
+    }
     
     utterance.onend = () => {
         setTimeout(() => {
@@ -1158,7 +1242,22 @@ async function handleRecordClick() {
     if (!mediaRecorder || mediaRecorder.state === 'inactive') {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            mediaRecorder = new MediaRecorder(stream);
+            
+            // Auto-detect best supported audio format
+            let options = { mimeType: 'audio/webm' };
+            if (!MediaRecorder.isTypeSupported('audio/webm')) {
+                if (MediaRecorder.isTypeSupported('audio/mp4')) {
+                    options.mimeType = 'audio/mp4';
+                } else if (MediaRecorder.isTypeSupported('audio/ogg')) {
+                    options.mimeType = 'audio/ogg';
+                } else if (MediaRecorder.isTypeSupported('audio/wav')) {
+                    options.mimeType = 'audio/wav';
+                } else {
+                    options = {}; // Let browser use default
+                }
+            }
+            
+            mediaRecorder = new MediaRecorder(stream, options);
             audioChunks = [];
             
             mediaRecorder.ondataavailable = (e) => {
@@ -1166,17 +1265,24 @@ async function handleRecordClick() {
             };
             
             mediaRecorder.onstop = async () => {
-                recordedBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                // Use the actual MIME type from MediaRecorder
+                const mimeType = mediaRecorder.mimeType || 'audio/webm';
+                recordedBlob = new Blob(audioChunks, { type: mimeType });
                 if (playRecordingBtn) playRecordingBtn.disabled = false;
                 
-                // In role play mode, auto-continue after recording (no scoring)
+                // In role play mode, auto-continue after recording
                 if (practiceMode === 'roleplay') {
                     setTimeout(() => {
                         speakOtherRoleAndContinue();
                     }, 500);
                 } else {
-                    // Analyze pronunciation for single/dialogue mode
-                    await analyzePronunciation();
+                    // Recording saved successfully
+                    if (recordingStatus) {
+                        recordingStatus.innerHTML = '<span style="color: #10b981;">✓ Recording saved! Click Play to listen.</span>';
+                        setTimeout(() => {
+                            recordingStatus.innerHTML = '';
+                        }, 3000);
+                    }
                 }
             };
             
@@ -1218,170 +1324,14 @@ async function handleRecordClick() {
     }
 }
 
-// Analyze pronunciation using Speech Recognition
-async function analyzePronunciation() {
-    if (!recognition) {
-        showNotification('Speech recognition not supported');
-        return;
-    }
-    
-    if (recordingStatus) {
-        recordingStatus.innerHTML = '<span style="color: #fbbf24;">Analyzing pronunciation...</span>';
-    }
-    
-    // Play the recorded audio and recognize it
-    const audioUrl = URL.createObjectURL(recordedBlob);
-    const audio = new Audio(audioUrl);
-    
-    recognition.onresult = (event) => {
-        const transcript = event.results[0][0].transcript.toLowerCase().trim();
-        const expected = practiceText.toLowerCase().trim();
-        
-        // Calculate similarity score
-        const score = calculateSimilarity(expected, transcript);
-        
-        // Display score
-        if (pronunciationScore) pronunciationScore.style.display = 'block';
-        if (scoreValue) scoreValue.textContent = score;
-        
-        let feedback = '';
-        let color = '';
-        if (score >= 90) {
-            feedback = 'Excellent! Perfect pronunciation! 🎉';
-            color = '#10b981';
-        } else if (score >= 75) {
-            feedback = 'Great job! Keep practicing! 👍';
-            color = '#3b82f6';
-        } else if (score >= 60) {
-            feedback = 'Good effort! Try again for better clarity. 💪';
-            color = '#fbbf24';
-        } else {
-            feedback = 'Keep practicing! Focus on clarity. 📚';
-            color = '#ef4444';
-        }
-        
-        if (scoreFeedback) {
-            scoreFeedback.innerHTML = `
-                <div style="color: ${color}; margin-bottom: 10px;">${feedback}</div>
-                <div style="font-size: 13px; opacity: 0.8;">
-                    <strong>You said:</strong> "${transcript}"<br>
-                    <strong>Expected:</strong> "${practiceText}"
-                </div>
-            `;
-        }
-        
-        if (recordingStatus) recordingStatus.innerHTML = '';
-    };
-    
-    recognition.onerror = () => {
-        if (recordingStatus) {
-            recordingStatus.innerHTML = '<span style="color: #ef4444;">Could not analyze. Please try again.</span>';
-        }
-    };
-    
-    audio.play();
-    recognition.start();
-}
-
-// Calculate text similarity (Levenshtein distance based)
-function calculateSimilarity(s1, s2) {
-    const longer = s1.length > s2.length ? s1 : s2;
-    const shorter = s1.length > s2.length ? s2 : s1;
-    
-    if (longer.length === 0) return 100;
-    
-    const editDistance = levenshteinDistance(longer, shorter);
-    return Math.round((1 - editDistance / longer.length) * 100);
-}
-
-function levenshteinDistance(s1, s2) {
-    const costs = [];
-    for (let i = 0; i <= s1.length; i++) {
-        let lastValue = i;
-        for (let j = 0; j <= s2.length; j++) {
-            if (i === 0) {
-                costs[j] = j;
-            } else if (j > 0) {
-                let newValue = costs[j - 1];
-                if (s1.charAt(i - 1) !== s2.charAt(j - 1)) {
-                    newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1;
-                }
-                costs[j - 1] = lastValue;
-                lastValue = newValue;
-            }
-        }
-        if (i > 0) costs[s2.length] = lastValue;
-    }
-    return costs[s2.length];
-}
+// Pronunciation scoring feature removed - not necessary
 
 // Prevent page from pausing audio when screen turns off or tab goes to background
 document.addEventListener('visibilitychange', () => {
     // Don't do anything - let audio continue playing in background
     // This is important for mobile background playback
-    if (document.hidden) {
-        console.log('Page hidden - audio continues in background');
-    } else {
-        console.log('Page visible - audio continues');
-    }
 });
 
 // Translation cache to avoid repeated API calls
-const translationCache = new Map();
 
-// Translate text to Vietnamese using MyMemory API (free, no key required)
-async function translateToVietnamese(text) {
-    // Check cache first
-    if (translationCache.has(text)) {
-        return translationCache.get(text);
-    }
-    
-    try {
-        const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|vi`);
-        const data = await response.json();
-        
-        if (data.responseStatus === 200 && data.responseData) {
-            const translation = data.responseData.translatedText;
-            translationCache.set(text, translation);
-            return translation;
-        }
-    } catch (err) {
-        console.error('Translation failed:', err);
-    }
-    
-    return null;
-}
-
-// Show translation tooltip
-function showTranslationTooltip(element, text, translation) {
-    // Remove existing tooltips
-    document.querySelectorAll('.translation-tooltip').forEach(t => t.remove());
-    
-    const tooltip = document.createElement('div');
-    tooltip.className = 'translation-tooltip';
-    tooltip.textContent = translation;
-    document.body.appendChild(tooltip);
-    
-    // Position tooltip near the element
-    const rect = element.getBoundingClientRect();
-    tooltip.style.left = rect.left + 'px';
-    tooltip.style.top = (rect.bottom + 5) + 'px';
-    
-    // Auto-hide after 5 seconds
-    setTimeout(() => tooltip.remove(), 5000);
-}
-
-// Add vocab word hover translation
-function addVocabTranslation() {
-    document.querySelectorAll('.vocab-word').forEach(wordCell => {
-        const text = wordCell.textContent.trim();
-        
-        wordCell.addEventListener('mouseenter', async () => {
-            const translation = await translateToVietnamese(text);
-            if (translation) {
-                showTranslationTooltip(wordCell, text, translation);
-            }
-        });
-    });
-}
 

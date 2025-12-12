@@ -35,24 +35,29 @@ foreach ($episode in $episodes) {
         continue
     }
     
-    try {
-        Write-Host "[$($episode.id)/$($episodes.Count)] Downloading: $fileName" -ForegroundColor Cyan
-        
-        # Download with progress
-        $ProgressPreference = 'SilentlyContinue'
-        Invoke-WebRequest -Uri $episode.mp3 -OutFile $localPath -TimeoutSec 120
-        $ProgressPreference = 'Continue'
-        
-        $fileSize = (Get-Item $localPath).Length / 1MB
-        Write-Host "[$($episode.id)/$($episodes.Count)] Downloaded: $fileName ($([math]::Round($fileSize, 2)) MB)" -ForegroundColor Green
-        $downloaded++
-        
-        # Small delay to avoid overwhelming the server
-        Start-Sleep -Milliseconds 100
-        
-    } catch {
-        Write-Host "[$($episode.id)/$($episodes.Count)] Failed: $fileName - $($_.Exception.Message)" -ForegroundColor Red
-        $failed++
+    $mp3Url = $episode.mp3
+    if ($mp3Url -like '/englishpod_*') {
+        $mp3Url = "https://archive.org/download/englishpod_all/$fileName"
+    }
+    if ($mp3Url -like 'http*') {
+        try {
+            Write-Host "[$($episode.id)/$($episodes.Count)] Downloading: $fileName" -ForegroundColor Cyan
+            # Download with progress
+            $ProgressPreference = 'SilentlyContinue'
+            Invoke-WebRequest -Uri $mp3Url -OutFile $localPath -TimeoutSec 120
+            $ProgressPreference = 'Continue'
+            $fileSize = (Get-Item $localPath).Length / 1MB
+            Write-Host "[$($episode.id)/$($episodes.Count)] Downloaded: $fileName ($([math]::Round($fileSize, 2)) MB)" -ForegroundColor Green
+            $downloaded++
+            # Small delay to avoid overwhelming the server
+            Start-Sleep -Milliseconds 100
+        } catch {
+            Write-Host "[$($episode.id)/$($episodes.Count)] Failed: $fileName - $($_.Exception.Message)" -ForegroundColor Red
+            $failed++
+        }
+    } else {
+        Write-Host "[$($episode.id)/$($episodes.Count)] Skipped: $fileName (local path)" -ForegroundColor Gray
+        $skipped++
     }
 }
 

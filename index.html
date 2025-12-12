@@ -16,27 +16,53 @@
     <!-- Performance optimizations -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Defer font loading to not block render -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet"></noscript>
     
     <!-- Preload critical resources -->
     <link rel="preconnect" href="https://archive.org" crossorigin>
     <link rel="dns-prefetch" href="https://archive.org">
     
-    <!-- Critical CSS -->
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="chatbot.css">
+    <!-- Critical CSS inline for instant render -->
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        :root{--bg-primary:#0f0f0f;--bg-card:#1e1e1e;--text-primary:#fff;--accent:#6366f1}
+        body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg-primary);color:var(--text-primary);min-height:100vh;line-height:1.6;font-display:swap}
+        .container{max-width:1400px;margin:0 auto;padding:20px}
+        @font-face{font-family:'Inter';font-display:swap}
+    </style>
+    
+    <!-- Full CSS loaded async to not block render -->
+    <link rel="stylesheet" href="style.css" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="style.css"></noscript>
+    
+    <!-- Chatbot CSS loaded when needed -->
     
     <!-- Preload script -->
     <link rel="preload" href="script.js" as="script">
     
     <script>
-        // Register service worker for offline support and caching
+        // Defer service worker registration to not block initial load
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js').catch(() => {});
-            });
+            // Register after page loads and is idle
+            if ('requestIdleCallback' in window) {
+                requestIdleCallback(() => {
+                    navigator.serviceWorker.register('./sw.js').catch(() => {});
+                });
+            } else {
+                window.addEventListener('load', () => {
+                    setTimeout(() => {
+                        navigator.serviceWorker.register('./sw.js').catch(() => {});
+                    }, 1000);
+                });
+            }
         }
     </script>
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="episodes-index.js" as="script">
+    <link rel="preload" href="episodes-chunk-1.js" as="script">
 </head>
 <body>
     <!-- Loading Screen -->
@@ -64,7 +90,7 @@
     <div class="app-container" id="appContainer">
     <div class="container">
         <header>
-            <h1>English</h1>
+            <h1 id="mainTitle" style="cursor: pointer;">English</h1>
             <p>Learn English through 365 conversations at various levels.</p>
         </header>
         
@@ -248,25 +274,50 @@
     </div>
     </div>
 
-    <script src="episodes-index.js"></script>
-    <script src="script.js"></script>
+    <!-- Load scripts with performance optimization -->
+    <script src="episodes-index.js" defer></script>
+    <script src="script.js" defer></script>
     <script>
-        // Performance optimization: Hide loading screen after content loads
-        window.addEventListener('load', () => {
+        // Performance optimization: Hide loading screen ASAP
+        window.addEventListener('DOMContentLoaded', () => {
             const loadingScreen = document.getElementById('loadingScreen');
             const appContainer = document.querySelector('.app-container');
             
             if (loadingScreen && appContainer) {
-                setTimeout(() => {
-                    loadingScreen.style.opacity = '0';
-                    appContainer.style.opacity = '1';
-                    setTimeout(() => loadingScreen.remove(), 500);
-                }, 1000);
+                // Remove loading screen as soon as DOM ready (much faster)
+                loadingScreen.style.opacity = '0';
+                appContainer.classList.add('loaded');
+                setTimeout(() => loadingScreen.remove(), 300);
             }
         });
     </script>
     
-    <!-- ChatGPT Assistant -->
-    <script src="chatbot.js"></script>
+    <!-- ChatGPT Assistant (lazy load when idle) -->
+    <script>
+        // Load chatbot resources when browser is idle
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(() => {
+                const link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = 'chatbot.css';
+                document.head.appendChild(link);
+                
+                const script = document.createElement('script');
+                script.src = 'chatbot.js';
+                document.body.appendChild(script);
+            });
+        } else {
+            setTimeout(() => {
+                const link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = 'chatbot.css';
+                document.head.appendChild(link);
+                
+                const script = document.createElement('script');
+                script.src = 'chatbot.js';
+                document.body.appendChild(script);
+            }, 2000);
+        }
+    </script>
 </body>
 </html>

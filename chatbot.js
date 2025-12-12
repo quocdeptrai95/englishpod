@@ -1,6 +1,6 @@
 // Google Gemini AI Assistant Integration (FREE!)
 // Get your FREE API key here: https://aistudio.google.com/app/apikey
-const GEMINI_API_KEY = 'AIzaSyBI1M-kBo4PowREUbykEE7JkMHz8XLbCVA';
+const GEMINI_API_KEY = 'AIzaSyAE28RVgIZVAbTiKQmgIOKXsg-77sKEJtY';
 
 let chatHistory = [];
 let isChatOpen = false;
@@ -160,8 +160,7 @@ async function sendMessage() {
 
     } catch (error) {
         removeTypingIndicator(typingId);
-        console.error('Gemini error:', error);
-        addMessage('Xin lỗi, có lỗi xảy ra. Vui lòng thử lại.\n\n' + error.message, 'assistant', true);
+        addMessage('Xin lỗi, có lỗi xảy ra. Vui lòng thử lại.', 'assistant', true);
     }
 }
 

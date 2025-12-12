@@ -1,5 +1,5 @@
-const CACHE_NAME = 'english-v3';
-const AUDIO_CACHE_NAME = 'english-audio-v1';
+const CACHE_NAME = 'english-v4';
+const AUDIO_CACHE_NAME = 'english-audio-v2';
 const urlsToCache = [
     './',
     './index.html',
@@ -43,11 +43,8 @@ self.addEventListener('fetch', event => {
             caches.open(AUDIO_CACHE_NAME).then(cache => {
                 return cache.match(event.request).then(response => {
                     if (response) {
-                        console.log('SW: Serving audio from cache:', url);
                         return response;
                     }
-                    
-                    console.log('SW: Fetching audio from network:', url);
                     return fetch(event.request).then(networkResponse => {
                         // Cache audio file for next time
                         if (networkResponse && networkResponse.status === 200) {
@@ -68,7 +65,6 @@ self.addEventListener('fetch', event => {
     
     // Skip chunk files - load them fresh each time to avoid caching issues
     if (url.includes('episodes-chunk-')) {
-        console.log('SW: Skipping chunk file:', url);
         return;
     }
 
@@ -77,11 +73,8 @@ self.addEventListener('fetch', event => {
             .then(response => {
                 // Return cached version if available
                 if (response) {
-                    console.log('SW: Serving from cache:', url);
                     return response;
                 }
-                
-                console.log('SW: Fetching from network:', url);
                 // Otherwise fetch from network
                 return fetch(event.request)
                     .then(response => {
@@ -92,9 +85,7 @@ self.addEventListener('fetch', event => {
                                 .then(cache => {
                                     cache.put(event.request, responseToCache);
                                 })
-                                .catch(err => {
-                                    console.log('SW: Cache write failed:', err);
-                                }); // Silently fail cache write
+                                .catch(() => {}); // Silently fail cache write
                         }
                         return response;
                     })

@@ -237,11 +237,14 @@ header p {
     transition: all var(--transition-base);
     position: relative;
     overflow: hidden;
+    /* GPU acceleration for smoother animations */
+    will-change: transform, opacity;
+    transform: translateZ(0);
 }
 
 .episode-card:hover {
     border-color: var(--accent);
-    transform: translateY(-4px);
+    transform: translateY(-4px) translateZ(0);
     box-shadow: 0 12px 24px rgba(99, 102, 241, 0.3);
 }
 
@@ -1850,27 +1853,4 @@ audio::-webkit-media-controls-panel {
     }
 }
 
-/* Translation Tooltip */
-.translation-tooltip {
-    position: fixed;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 8px 12px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 500;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-    z-index: 10000;
-    pointer-events: none;
-    animation: tooltipFadeIn 0.2s ease-out;
-    max-width: 300px;
-    word-wrap: break-word;
-}
 
-@keyframes tooltipFadeIn {
-    from { opacity: 0; transform: translateY(-5px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.vocab-word { cursor: pointer; }
-.vocab-word:hover { background: var(--accent-light); border-radius: 4px; }
