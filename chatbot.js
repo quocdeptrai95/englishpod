@@ -1,6 +1,6 @@
 // Google Gemini AI Assistant Integration (FREE!)
 // Get your FREE API key here: https://aistudio.google.com/app/apikey
-const GEMINI_API_KEY = 'AIzaSyAE28RVgIZVAbTiKQmgIOKXsg-77sKEJtY';
+const GEMINI_API_KEY = 'AƠI KEY OF YOU';
 
 let chatHistory = [];
 let isChatOpen = false;
