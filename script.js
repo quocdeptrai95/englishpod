@@ -950,9 +950,25 @@ function initializePracticeControls() {
     // Record button
     recordBtn.addEventListener('click', handleRecordClick);
     
-    // Play original audio
+    // Play original audio with stop functionality
+    let isPlayingOriginal = false;
     playOriginalBtn.addEventListener('click', () => {
         if (!practiceText) return;
+        
+        // If currently playing, stop it
+        if (isPlayingOriginal) {
+            window.speechSynthesis.cancel();
+            isPlayingOriginal = false;
+            playOriginalBtn.innerHTML = `
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                <span>Play Original</span>
+            `;
+            return;
+        }
+        
+        // Start playing
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(practiceText);
         utterance.lang = 'en-GB';
@@ -965,39 +981,125 @@ function initializePracticeControls() {
             utterance.voice = ukVoice;
         }
         
+        // Update button to show Stop
+        isPlayingOriginal = true;
+        playOriginalBtn.innerHTML = `
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <rect x="6" y="6" width="12" height="12" rx="2"/>
+            </svg>
+            <span>Stop</span>
+        `;
+        
+        // When speech ends, restore button
+        utterance.onend = () => {
+            isPlayingOriginal = false;
+            playOriginalBtn.innerHTML = `
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                <span>Play Original</span>
+            `;
+        };
+        
+        // Also restore on error
+        utterance.onerror = () => {
+            isPlayingOriginal = false;
+            playOriginalBtn.innerHTML = `
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                <span>Play Original</span>
+            `;
+        };
+        
         window.speechSynthesis.speak(utterance);
     });
     
-    // Play recorded audio
+    // Play recorded audio with stop functionality
+    let currentRecordingAudio = null;
+    let isPlayingRecording = false;
+    
     playRecordingBtn.addEventListener('click', () => {
+        // If currently playing, stop it
+        if (isPlayingRecording && currentRecordingAudio) {
+            currentRecordingAudio.pause();
+            currentRecordingAudio.currentTime = 0;
+            currentRecordingAudio = null;
+            isPlayingRecording = false;
+            playRecordingBtn.disabled = false;
+            playRecordingBtn.innerHTML = `
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                <span>Play My Recording</span>
+            `;
+            return;
+        }
+        
         if (recordedBlob) {
             playRecordingBtn.disabled = true;
-            playRecordingBtn.textContent = 'Loading...';
+            playRecordingBtn.innerHTML = `
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="12"/>
+                </svg>
+                <span>Loading...</span>
+            `;
             
             const audioUrl = URL.createObjectURL(recordedBlob);
             const audio = new Audio(audioUrl);
+            currentRecordingAudio = audio;
             
             // Wait for audio to be ready before playing
             audio.onloadeddata = () => {
-                playRecordingBtn.textContent = 'Playing...';
+                isPlayingRecording = true;
+                playRecordingBtn.disabled = false;
+                playRecordingBtn.innerHTML = `
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <rect x="6" y="6" width="12" height="12" rx="2"/>
+                    </svg>
+                    <span>Stop</span>
+                `;
+                
                 audio.play().catch(err => {
                     URL.revokeObjectURL(audioUrl);
+                    isPlayingRecording = false;
+                    currentRecordingAudio = null;
                     playRecordingBtn.disabled = false;
-                    playRecordingBtn.textContent = '▶ Play My Recording';
+                    playRecordingBtn.innerHTML = `
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                        </svg>
+                        <span>Play My Recording</span>
+                    `;
                     showNotification('❌ Cannot play recording: ' + err.message);
                 });
             };
             
             audio.onended = () => {
                 URL.revokeObjectURL(audioUrl);
+                isPlayingRecording = false;
+                currentRecordingAudio = null;
                 playRecordingBtn.disabled = false;
-                playRecordingBtn.textContent = '▶ Play My Recording';
+                playRecordingBtn.innerHTML = `
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                    </svg>
+                    <span>Play My Recording</span>
+                `;
             };
             
             audio.onerror = (e) => {
                 URL.revokeObjectURL(audioUrl);
+                isPlayingRecording = false;
+                currentRecordingAudio = null;
                 playRecordingBtn.disabled = false;
-                playRecordingBtn.textContent = '▶ Play My Recording';
+                playRecordingBtn.innerHTML = `
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                    </svg>
+                    <span>Play My Recording</span>
+                `;
                 showNotification('❌ Cannot play recording - format not supported');
             };
             
