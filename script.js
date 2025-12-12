@@ -201,7 +201,9 @@ function renderEpisodes(append = false) {
     // Render actual content immediately for better performance
     requestAnimationFrame(() => {
         const fragment = document.createDocumentFragment();
-        const toDisplay = filtered.slice(0, displayedCount);
+        // When appending, only slice the new episodes
+        const startIndex = append ? displayedCount - LOAD_MORE_COUNT : 0;
+        const toDisplay = filtered.slice(startIndex, displayedCount);
         
         toDisplay.forEach((ep, index) => {
             const card = document.createElement('div');
