@@ -87,22 +87,57 @@ function getEpisodeProgress(episodeId) {
 
 function updateProgressUI() {
     const completed = getCompleted();
+    const favorites = getFavorites();
+    const progress = getProgress();
     const totalEpisodes = episodes.length;
     const percentage = Math.round((completed.length / totalEpisodes) * 100);
     
+    // Calculate total learning time
+    let totalMinutes = 0;
+    for (const [episodeId, data] of Object.entries(progress)) {
+        if (completed.includes(episodeId)) {
+            totalMinutes += Math.round(data.duration / 60);
+        }
+    }
+    const hours = Math.floor(totalMinutes / 60);
+    const mins = totalMinutes % 60;
+    
     const progressContainer = document.getElementById('overallProgress');
     if (progressContainer) {
+        const hasData = completed.length > 0 || favorites.length > 0;
+        
+        if (!hasData && !currentUser) {
+            // Not logged in and no local data
+            progressContainer.style.display = 'none';
+            return;
+        }
+        
+        progressContainer.style.display = 'block';
         progressContainer.innerHTML = `
             <div class="progress-stats">
                 <div class="progress-header">
-                    <h3>Your Learning Progress</h3>
+                    <h3>📊 Your Learning Progress</h3>
                     <span class="progress-percentage">${percentage}%</span>
                 </div>
                 <div class="progress-bar-container">
                     <div class="progress-bar-fill" style="width: ${percentage}%"></div>
                 </div>
-                <div class="progress-text">
-                    ${completed.length} of ${totalEpisodes} episodes completed
+                <div class="progress-details">
+                    <div class="stat-item">
+                        <span class="stat-icon">✅</span>
+                        <span class="stat-value">${completed.length}</span>
+                        <span class="stat-label">Completed</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-icon">⭐</span>
+                        <span class="stat-value">${favorites.length}</span>
+                        <span class="stat-label">Favorites</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-icon">⏱️</span>
+                        <span class="stat-value">${hours}h ${mins}m</span>
+                        <span class="stat-label">Learning Time</span>
+                    </div>
                 </div>
             </div>
         `;

@@ -45,10 +45,28 @@ function updateAuthUI(user) {
         userProfile.style.display = 'flex';
         document.getElementById('userName').textContent = user.displayName || 'User';
         document.getElementById('userAvatar').src = user.photoURL || 'https://via.placeholder.com/40';
+        showNotification(`👋 Welcome back, ${user.displayName || 'User'}!`);
     } else {
         loginBtn.style.display = 'flex';
         userProfile.style.display = 'none';
+        // Clear user data from UI when logged out
+        clearUserDataUI();
     }
+}
+
+function clearUserDataUI() {
+    // Clear localStorage user data
+    localStorage.removeItem('favorites');
+    localStorage.removeItem('completed');
+    localStorage.removeItem('progress');
+    
+    // Update UI to reflect no user data
+    if (typeof updateProgressUI === 'function') updateProgressUI();
+    if (typeof updateFavoritesUI === 'function') updateFavoritesUI();
+    if (typeof updateContinueLearning === 'function') updateContinueLearning();
+    
+    // Re-render episodes to remove completed badges and favorite stars
+    if (typeof renderEpisodes === 'function') renderEpisodes();
 }
 
 async function signInWithGoogle() {
@@ -76,31 +94,83 @@ async function loadUserData(uid) {
     if (!db) return;
     
     try {
+        showNotification('📥 Loading your learning data...');
+        
         const doc = await db.collection('users').doc(uid).get();
         if (doc.exists) {
             const data = doc.data();
-            // Merge with localStorage
-            if (data.favorites) localStorage.setItem('favorites', JSON.stringify(data.favorites));
-            if (data.completed) localStorage.setItem('completed', JSON.stringify(data.completed));
-            if (data.progress) localStorage.setItem('progress', JSON.stringify(data.progress));
+            
+            // Replace localStorage with cloud data
+            if (data.favorites) {
+                localStorage.setItem('favorites', JSON.stringify(data.favorites));
+            } else {
+                localStorage.setItem('favorites', JSON.stringify([]));
+            }
+            
+            if (data.completed) {
+                localStorage.setItem('completed', JSON.stringify(data.completed));
+            } else {
+                localStorage.setItem('completed', JSON.stringify([]));
+            }
+            
+            if (data.progress) {
+                localStorage.setItem('progress', JSON.stringify(data.progress));
+            } else {
+                localStorage.setItem('progress', JSON.stringify({}));
+            }
+            
+            showNotification('✅ Loaded your learning progress!');
+        } else {
+            // First time user - create initial empty data
+            await db.collection('users').doc(uid).set({
+                favorites: [],
+                completed: [],
+                progress: {},
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            
+            localStorage.setItem('favorites', JSON.stringify([]));
+            localStorage.setItem('completed', JSON.stringify([]));
+            localStorage.setItem('progress', JSON.stringify({}));
+            
+            showNotification('🎉 Welcome! Your learning journey starts now!');
         }
-        updateProgressUI();
+        
+        // Update all UI components
+        if (typeof updateProgressUI === 'function') updateProgressUI();
+        if (typeof updateFavoritesUI === 'function') updateFavoritesUI();
+        if (typeof updateContinueLearning === 'function') updateContinueLearning();
+        if (typeof renderEpisodes === 'function') renderEpisodes();
+        
     } catch (error) {
         console.error('Load user data error:', error);
+        showNotification('❌ Failed to load your data. Using local data.');
     }
 }
 
 async function saveUserData() {
-    if (!currentUser || !db) return;
+    if (!currentUser || !db) {
+        console.log('Not logged in or Firebase not initialized - data saved locally only');
+        return;
+    }
     
     try {
-        await db.collection('users').doc(currentUser.uid).set({
+        const userData = {
             favorites: JSON.parse(localStorage.getItem('favorites') || '[]'),
             completed: JSON.parse(localStorage.getItem('completed') || '[]'),
             progress: JSON.parse(localStorage.getItem('progress') || '{}'),
-            lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-        }, { merge: true });
+            lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
+            displayName: currentUser.displayName,
+            email: currentUser.email,
+            photoURL: currentUser.photoURL
+        };
+        
+        await db.collection('users').doc(currentUser.uid).set(userData, { merge: true });
+        
+        console.log('✅ User data synced to cloud');
     } catch (error) {
         console.error('Save user data error:', error);
+        // Don't show notification - silent background sync
     }
 }
