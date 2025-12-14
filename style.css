@@ -1614,10 +1614,11 @@ audio::-webkit-media-controls-panel {
         gap: 10px;
     }
     
-    /* Mini Player responsive */
+    /* Mini Player responsive - Tablet */
     .mini-player {
-        height: 65px;
+        height: 70px;
         padding: 0 16px;
+        padding-bottom: max(env(safe-area-inset-bottom), 8px);
     }
     
     .mini-episode-title {
@@ -1628,9 +1629,19 @@ audio::-webkit-media-controls-panel {
         font-size: 11px;
     }
     
+    .mini-player-controls {
+        gap: 8px;
+    }
+    
     .mini-control-btn {
-        width: 38px;
-        height: 38px;
+        width: 44px; /* Touch target minimum */
+        height: 44px;
+        flex-shrink: 0;
+    }
+    
+    .mini-control-btn svg {
+        width: 20px;
+        height: 20px;
     }
     
     /* Theme toggle responsive */
@@ -1682,13 +1693,34 @@ audio::-webkit-media-controls-panel {
         font-size: 14px;
     }
     
+    /* Progress Bar Tablet - Medium touch target */
+    .progress-bar {
+        height: 8px;
+        border-radius: 4px;
+    }
+    
+    .progress-filled {
+        border-radius: 4px;
+    }
+    
     .controls {
         gap: 12px;
+    }
+    
+    .control-btn {
+        min-width: 44px;
+        min-height: 44px;
+        padding: 8px;
     }
     
     .control-btn.play-btn {
         width: 56px;
         height: 56px;
+    }
+    
+    .control-btn svg {
+        width: 22px;
+        height: 22px;
     }
 }
 
@@ -1765,33 +1797,39 @@ audio::-webkit-media-controls-panel {
         font-size: 11px;
     }
     
-    /* Mini Player mobile */
+    /* Mini Player mobile - Optimized for touch */
     .mini-player {
-        height: 60px;
+        height: 70px; /* Giữ nguyên height cho không bị chật */
         padding: 0 12px;
+        padding-bottom: max(env(safe-area-inset-bottom), 8px); /* iOS notch support */
     }
     
     .mini-episode-number {
         font-size: 12px;
-        min-width: 35px;
+        min-width: 32px;
     }
     
     .mini-episode-title {
-        font-size: 12px;
+        font-size: 13px;
     }
     
     .mini-episode-level {
-        font-size: 10px;
+        font-size: 11px;
+    }
+    
+    .mini-player-controls {
+        gap: 6px;
     }
     
     .mini-control-btn {
-        width: 36px;
-        height: 36px;
+        width: 44px; /* Touch target minimum 44×44 */
+        height: 44px;
+        flex-shrink: 0; /* Không bị shrink */
     }
     
     .mini-control-btn svg {
-        width: 18px;
-        height: 18px;
+        width: 20px;
+        height: 20px;
     }
     
     /* Theme toggle mobile */
@@ -1904,6 +1942,34 @@ audio::-webkit-media-controls-panel {
         padding: 12px;
     }
     
+    /* Progress Bar Mobile - Larger touch target */
+    .progress-container {
+        margin: 16px 0;
+    }
+    
+    .progress-bar {
+        height: 10px; /* Taller for easier touch */
+        border-radius: 5px;
+        cursor: pointer;
+        position: relative;
+        padding: 8px 0; /* Expand touch area */
+        margin: -8px 0; /* Offset padding */
+    }
+    
+    .progress-bar::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: transparent;
+    }
+    
+    .progress-filled {
+        border-radius: 5px;
+    }
+    
     .controls {
         gap: 12px;
     }
@@ -1914,22 +1980,24 @@ audio::-webkit-media-controls-panel {
     }
     
     .control-btn {
-        padding: 6px;
+        padding: 8px; /* Larger touch target */
+        min-width: 44px; /* Apple/Android minimum */
+        min-height: 44px;
     }
     
     .control-btn.play-btn {
-        width: 48px;
-        height: 48px;
+        width: 56px;
+        height: 56px;
     }
     
     .control-btn svg {
-        width: 20px;
-        height: 20px;
+        width: 22px;
+        height: 22px;
     }
     
     .control-btn.play-btn svg {
-        width: 28px;
-        height: 28px;
+        width: 30px;
+        height: 30px;
     }
     
     .time-display {
@@ -1949,15 +2017,66 @@ audio::-webkit-media-controls-panel {
         font-size: 11px;
     }
     
+    /* Progress Bar - Even larger on very small screens */
+    .progress-bar {
+        height: 12px;
+        border-radius: 6px;
+    }
+    
+    .progress-filled {
+        border-radius: 6px;
+    }
+    
     .controls {
-        flex-direction: column;
+        flex-wrap: wrap;
         gap: 8px;
+        justify-content: center;
     }
     
     .controls-left,
     .controls-right {
         flex-wrap: wrap;
         justify-content: center;
+        gap: 8px;
+    }
+    
+    .control-btn {
+        min-width: 48px;
+        min-height: 48px;
+    }
+    
+    .time-display {
+        width: 100%;
+        justify-content: center;
+        text-align: center;
+    }
+    
+    /* Mini Player - Very small screens */
+    .mini-player {
+        height: 75px; /* Cao hơn 1 chút để chứa buttons lớn */
+        padding: 0 8px;
+    }
+    
+    .mini-episode-number {
+        font-size: 11px;
+        min-width: 28px;
+    }
+    
+    .mini-episode-title {
+        font-size: 12px;
+    }
+    
+    .mini-episode-level {
+        font-size: 10px;
+    }
+    
+    .mini-player-controls {
+        gap: 4px;
+    }
+    
+    .mini-control-btn {
+        width: 46px; /* Slightly larger for easier touch */
+        height: 46px;
     }
 }
 

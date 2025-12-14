@@ -751,12 +751,8 @@ function playEpisode(episode) {
             audioPlayer.play().catch(() => {}); // Silently fail
         });
         navigator.mediaSession.setActionHandler('pause', () => audioPlayer.pause());
-        navigator.mediaSession.setActionHandler('seekbackward', () => {
-            audioPlayer.currentTime = Math.max(0, audioPlayer.currentTime - 10);
-        });
-        navigator.mediaSession.setActionHandler('seekforward', () => {
-            audioPlayer.currentTime = Math.min(audioPlayer.duration, audioPlayer.currentTime + 10);
-        });
+        
+        // Previous/Next track - Chuyển episode
         navigator.mediaSession.setActionHandler('previoustrack', async () => {
             const episodesIndex = getEpisodesIndex();
             const currentIndex = episodesIndex.findIndex(ep => ep.id === currentEpisode.id);
@@ -765,6 +761,7 @@ function playEpisode(episode) {
                 if (prevEpisode) playEpisode(prevEpisode);
             }
         });
+        
         navigator.mediaSession.setActionHandler('nexttrack', async () => {
             const episodesIndex = getEpisodesIndex();
             const currentIndex = episodesIndex.findIndex(ep => ep.id === currentEpisode.id);
@@ -772,6 +769,16 @@ function playEpisode(episode) {
                 const nextEpisode = await getEpisode(episodesIndex[currentIndex + 1].id);
                 if (nextEpisode) playEpisode(nextEpisode);
             }
+        });
+        
+        // Seekto - Kéo thanh progress trên lock screen
+        navigator.mediaSession.setActionHandler('seekto', (details) => {
+            if (details.fastSeek && 'fastSeek' in audioPlayer) {
+                audioPlayer.fastSeek(details.seekTime);
+            } else {
+                audioPlayer.currentTime = details.seekTime;
+            }
+            updateProgressBar();
         });
     }
     
@@ -928,6 +935,19 @@ function setupCustomPlayer() {
         progressFilled.style.width = percent + '%';
         
         currentTimeEl.textContent = formatTime(audioPlayer.currentTime);
+        
+        // Update Media Session position state for lock screen progress bar
+        if ('mediaSession' in navigator && 'setPositionState' in navigator.mediaSession) {
+            try {
+                navigator.mediaSession.setPositionState({
+                    duration: audioPlayer.duration,
+                    playbackRate: audioPlayer.playbackRate,
+                    position: audioPlayer.currentTime
+                });
+            } catch (error) {
+                // Some browsers don't support this yet
+            }
+        }
         
         // A-B Repeat logic
         if (repeatMode && repeatMode.start !== null && repeatMode.end !== null) {
@@ -1952,6 +1972,8 @@ document.addEventListener('visibilitychange', () => {
 // Mini Player Logic
 const miniPlayer = document.getElementById('miniPlayer');
 const miniPlayBtn = document.getElementById('miniPlayBtn');
+const miniPrevBtn = document.getElementById('miniPrevBtn');
+const miniNextBtn = document.getElementById('miniNextBtn');
 const miniExpandBtn = document.getElementById('miniExpandBtn');
 
 function updateMiniPlayer() {
@@ -2002,6 +2024,29 @@ window.addEventListener('scroll', () => {
     }, 100); // Throttle to 100ms
 }, { passive: true });
 
+// Mini player previous episode button
+miniPrevBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation(); // Prevent event bubbling
+    if (!currentEpisode) return;
+    
+    const currentId = parseInt(currentEpisode.id);
+    const prevId = currentId > 1 ? currentId - 1 : 365;
+    
+    // Load and play previous episode
+    getEpisode(prevId).then(episode => {
+        if (episode) {
+            playEpisode(episode);
+            showNotification(`⏮️ Playing Episode ${prevId}`);
+        }
+    });
+});
+
+// Touch event support for mobile
+miniPrevBtn.addEventListener('touchend', (e) => {
+    e.preventDefault();
+}, { passive: false });
+
 // Mini player play/pause button
 miniPlayBtn.addEventListener('click', (e) => {
     e.stopPropagation(); // Prevent event bubbling
@@ -2011,6 +2056,29 @@ miniPlayBtn.addEventListener('click', (e) => {
         audioPlayer.pause();
     }
 });
+
+// Mini player next episode button
+miniNextBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation(); // Prevent event bubbling
+    if (!currentEpisode) return;
+    
+    const currentId = parseInt(currentEpisode.id);
+    const nextId = currentId < 365 ? currentId + 1 : 1;
+    
+    // Load and play next episode
+    getEpisode(nextId).then(episode => {
+        if (episode) {
+            playEpisode(episode);
+            showNotification(`⏭️ Playing Episode ${nextId}`);
+        }
+    });
+});
+
+// Touch event support for mobile
+miniNextBtn.addEventListener('touchend', (e) => {
+    e.preventDefault();
+}, { passive: false });
 
 // Mini player expand button - scroll back to episode detail
 miniExpandBtn.addEventListener('click', (e) => {

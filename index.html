@@ -270,7 +270,7 @@
                         </div>
                         
                         <div class="controls-left">
-                            <button class="control-btn" id="prevBtn" title="Previous">
+                            <button class="control-btn" id="prevBtn" title="Previous Episode" aria-label="Previous Episode">
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
                                     <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/>
                                 </svg>
@@ -288,7 +288,7 @@
                         </button>
                         
                         <div class="controls-right">
-                            <button class="control-btn" id="nextBtn" title="Next">
+                            <button class="control-btn" id="nextBtn" title="Next Episode" aria-label="Next Episode">
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
                                     <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
                                 </svg>
@@ -377,6 +377,11 @@
             </div>
         </div>
         <div class="mini-player-controls">
+            <button class="mini-control-btn" id="miniPrevBtn" aria-label="Previous Episode">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"></path>
+                </svg>
+            </button>
             <button class="mini-control-btn" id="miniPlayBtn" aria-label="Play/Pause">
                 <svg class="mini-play-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                     <polygon points="5 3 19 12 5 21 5 3"></polygon>
@@ -384,6 +389,11 @@
                 <svg class="mini-pause-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="display: none;">
                     <rect x="6" y="4" width="4" height="16"></rect>
                     <rect x="14" y="4" width="4" height="16"></rect>
+                </svg>
+            </button>
+            <button class="mini-control-btn" id="miniNextBtn" aria-label="Next Episode">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M16 18h2V6h-2zM6 18l8.5-6L6 6z"></path>
                 </svg>
             </button>
             <button class="mini-control-btn" id="miniExpandBtn" aria-label="Expand player">
