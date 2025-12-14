@@ -98,11 +98,41 @@
         <span class="theme-icon">🌙</span>
     </button>
     
+    <!-- User Auth Button -->
+    <div class="auth-container">
+        <button class="login-btn" id="loginBtn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <span>Sign In</span>
+        </button>
+        <div class="user-profile" id="userProfile" style="display: none;">
+            <img id="userAvatar" class="user-avatar" src="" alt="User">
+            <div class="user-dropdown">
+                <span id="userName">User</span>
+                <button class="logout-btn" id="logoutBtn">Sign Out</button>
+            </div>
+        </div>
+    </div>
+    
     <div class="container">
         <header>
             <h1 id="mainTitle" style="cursor: pointer;">English</h1>
             <p>Learn English through 365 conversations at various levels.</p>
         </header>
+        
+        <!-- Overall Progress -->
+        <div id="overallProgress" class="overall-progress"></div>
+        
+        <!-- Continue Learning -->
+        <div id="continueSection" class="continue-section" style="display: none;"></div>
+        
+        <!-- Favorites Section -->
+        <div id="favoritesSection" class="favorites-section" style="display: none;">
+            <h3>⭐ Your Favorites</h3>
+            <div class="favorites-grid"></div>
+        </div>
         
         <!-- Recently Played Section -->
         <div id="recentlyPlayed" class="recently-played" style="display: none;">
@@ -397,5 +427,13 @@
         </div>
     </div>
     
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    
+    <!-- Firebase Config & Learning Progress -->
+    <script src="firebase-config.js"></script>
+    <script src="learning-progress.js"></script>
 </body>
 </html>

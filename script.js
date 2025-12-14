@@ -401,6 +401,11 @@ const debouncedSearch = debounce(searchEpisodes, 300);
 
 // Initialize app
 function initApp() {
+    // Initialize Firebase
+    if (typeof initFirebase === 'function') {
+        initFirebase();
+    }
+    
     // Apply saved theme
     setTheme(getTheme());
     
@@ -410,10 +415,28 @@ function initApp() {
         themeToggle.addEventListener('click', toggleTheme);
     }
     
+    // Auth buttons
+    const loginBtn = document.getElementById('loginBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (loginBtn) {
+        loginBtn.addEventListener('click', signInWithGoogle);
+    }
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', signOut);
+    }
+    
     // Main title click to go home
     const mainTitle = document.getElementById('mainTitle');
     if (mainTitle) {
         mainTitle.addEventListener('click', () => location.reload());
+    }
+    
+    // Update progress UI
+    if (typeof updateProgressUI === 'function') {
+        updateProgressUI();
+    }
+    if (typeof updateFavoritesUI === 'function') {
+        updateFavoritesUI();
     }
     
     // Search functionality
@@ -609,11 +632,29 @@ function renderEpisodes(append = false) {
             // Reduced animation delay for faster perceived loading
             card.style.animation = `fadeIn 0.2s ease-out ${append ? 0 : Math.min(index * 10, 200)}ms forwards`;
             
+                const isCompleted = typeof isCompleted !== 'undefined' && isCompleted(ep.id);
+                const isFavorited = typeof isFavorite !== 'undefined' && isFavorite(ep.id);
+                
                 card.innerHTML = `
+                    <button class="favorite-btn ${isFavorited ? 'active' : ''}" data-episode-id="${ep.id}" title="Add to favorites">
+                        ${isFavorited ? '⭐' : '☆'}
+                    </button>
                     <div class="episode-number">${ep.id}</div>
                     <h3>${ep.title}</h3>
                     <span class="level-badge">${ep.level}</span>
+                    ${isCompleted ? '<div class="completed-badge">✓ Completed</div>' : ''}
                 `;
+                
+                // Favorite button handler
+                const favBtn = card.querySelector('.favorite-btn');
+                favBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (typeof toggleFavorite !== 'undefined') {
+                        const isFav = toggleFavorite(ep.id);
+                        favBtn.classList.toggle('active', isFav);
+                        favBtn.textContent = isFav ? '⭐' : '☆';
+                    }
+                });
                 
                 // Add click listener directly
                 card.addEventListener('click', async () => {
@@ -670,6 +711,22 @@ function playEpisode(episode) {
     
     // Add to recently played
     addToRecentlyPlayed(episode.id, episode.title, episode.level);
+    
+    // Start progress tracking
+    if (typeof startProgressTracking !== 'undefined') {
+        startProgressTracking(episode.id);
+    }
+    
+    // Restore progress if exists
+    if (typeof getEpisodeProgress !== 'undefined') {
+        const savedProgress = getEpisodeProgress(episode.id);
+        if (savedProgress && savedProgress.percentage < 95) {
+            setTimeout(() => {
+                audioPlayer.currentTime = savedProgress.currentTime;
+                showNotification(`▶️ Resuming at ${Math.round(savedProgress.percentage)}%`);
+            }, 500);
+        }
+    }
     
     detailTitle.textContent = episode.title;
     detailLevel.textContent = episode.level;
