@@ -661,6 +661,13 @@ header p {
     align-items: center;
     justify-content: center;
     transition: all var(--transition-fast);
+    line-height: 0;
+    padding: 0;
+}
+
+.mini-control-btn svg {
+    display: block;
+    margin: auto;
 }
 
 .mini-control-btn:hover {
@@ -1221,6 +1228,13 @@ header p {
     display: flex;
     justify-content: center;
     align-items: center;
+    gap: 24px;
+}
+
+.controls-left,
+.controls-right {
+    display: flex;
+    align-items: center;
     gap: 8px;
 }
 
@@ -1236,6 +1250,12 @@ header p {
     justify-content: center;
     transition: all var(--transition-base);
     position: relative;
+    line-height: 0;
+}
+
+.control-btn svg {
+    display: block;
+    margin: auto;
 }
 
 .control-btn::before {
@@ -1268,6 +1288,12 @@ header p {
     color: white;
     box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
     position: relative;
+    padding: 0;
+}
+
+.control-btn.play-btn svg {
+    width: 24px;
+    height: 24px;
 }
 
 .control-btn.play-btn::after {

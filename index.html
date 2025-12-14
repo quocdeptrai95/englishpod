@@ -254,41 +254,45 @@
                     </div>
                     
                     <div class="controls">
-                        <button class="control-btn" id="prevBtn" title="Previous">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/>
-                            </svg>
-                        </button>
+                        <div class="controls-left">
+                            <button class="control-btn" id="prevBtn" title="Previous">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/>
+                                </svg>
+                            </button>
+                            
+                            <button class="control-btn" id="volumeBtn" title="Volume">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
+                                </svg>
+                            </button>
+                        </div>
                         
                         <button class="control-btn play-btn" id="playBtn" title="Play/Pause">
-                            <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" class="play-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="play-icon">
                                 <path d="M8 5v14l11-7z"/>
                             </svg>
-                            <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" class="pause-icon" style="display: none;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="pause-icon" style="display: none;">
                                 <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
                             </svg>
                             <span class="loading-spinner" style="display: none;">⏳</span>
                         </button>
                         
-                        <button class="control-btn" id="nextBtn" title="Next">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
-                            </svg>
-                        </button>
-                        
-                        <button class="control-btn" id="speedBtn" title="Speed">1x</button>
-                        
-                        <button class="control-btn" id="repeatBtn" title="A-B Repeat">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/>
-                            </svg>
-                        </button>
-                        
-                        <button class="control-btn" id="volumeBtn" title="Volume">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
-                            </svg>
-                        </button>
+                        <div class="controls-right">
+                            <button class="control-btn" id="nextBtn" title="Next">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
+                                </svg>
+                            </button>
+                            
+                            <button class="control-btn" id="speedBtn" title="Speed">1x</button>
+                            
+                            <button class="control-btn" id="repeatBtn" title="A-B Repeat">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
