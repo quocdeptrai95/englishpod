@@ -1,4 +1,4 @@
-const CACHE_NAME = 'english-v4';
+const CACHE_NAME = 'english-v5';
 const AUDIO_CACHE_NAME = 'english-audio-v2';
 const urlsToCache = [
     './',
@@ -68,6 +68,29 @@ self.addEventListener('fetch', event => {
         return;
     }
 
+    // For script.js and index.html - ALWAYS check network first (network-first strategy)
+    if (url.includes('script.js') || url.endsWith('/') || url.includes('index.html')) {
+        event.respondWith(
+            fetch(event.request)
+                .then(response => {
+                    // Update cache with fresh version
+                    if (response && response.status === 200 && response.type === 'basic') {
+                        const responseToCache = response.clone();
+                        caches.open(CACHE_NAME)
+                            .then(cache => cache.put(event.request, responseToCache))
+                            .catch(() => {});
+                    }
+                    return response;
+                })
+                .catch(() => {
+                    // Network failed, fallback to cache
+                    return caches.match(event.request);
+                })
+        );
+        return;
+    }
+
+    // For other files - use cache-first strategy
     event.respondWith(
         caches.match(event.request)
             .then(response => {

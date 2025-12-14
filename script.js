@@ -354,16 +354,20 @@ function playEpisode(episode) {
         navigator.mediaSession.setActionHandler('seekforward', () => {
             audioPlayer.currentTime = Math.min(audioPlayer.duration, audioPlayer.currentTime + 10);
         });
-        navigator.mediaSession.setActionHandler('previoustrack', () => {
-            const currentIndex = episodes.findIndex(ep => ep.id === currentEpisode.id);
+        navigator.mediaSession.setActionHandler('previoustrack', async () => {
+            const episodesIndex = getEpisodesIndex();
+            const currentIndex = episodesIndex.findIndex(ep => ep.id === currentEpisode.id);
             if (currentIndex > 0) {
-                playEpisode(episodes[currentIndex - 1]);
+                const prevEpisode = await getEpisode(episodesIndex[currentIndex - 1].id);
+                if (prevEpisode) playEpisode(prevEpisode);
             }
         });
-        navigator.mediaSession.setActionHandler('nexttrack', () => {
-            const currentIndex = episodes.findIndex(ep => ep.id === currentEpisode.id);
-            if (currentIndex < episodes.length - 1) {
-                playEpisode(episodes[currentIndex + 1]);
+        navigator.mediaSession.setActionHandler('nexttrack', async () => {
+            const episodesIndex = getEpisodesIndex();
+            const currentIndex = episodesIndex.findIndex(ep => ep.id === currentEpisode.id);
+            if (currentIndex < episodesIndex.length - 1) {
+                const nextEpisode = await getEpisode(episodesIndex[currentIndex + 1].id);
+                if (nextEpisode) playEpisode(nextEpisode);
             }
         });
     }
@@ -543,7 +547,52 @@ function setupCustomPlayer() {
         durationEl.textContent = formatTime(audioPlayer.duration);
     });
     
-    // Progress bar click
+    // Auto-play next episode when current ends
+    audioPlayer.addEventListener('ended', async () => {
+        const episodesIndex = getEpisodesIndex();
+        const currentIndex = episodesIndex.findIndex(ep => ep.id === currentEpisode.id);
+        
+        if (currentIndex < episodesIndex.length - 1) {
+            showNotification('⏭️ Playing next episode...');
+            const nextEpisode = await getEpisode(episodesIndex[currentIndex + 1].id);
+            if (nextEpisode) {
+                playEpisode(nextEpisode);
+                // Auto-play the next episode
+                setTimeout(() => {
+                    audioPlayer.play().catch(() => {});
+                }, 500);
+            }
+        } else {
+            showNotification('🎉 You\'ve reached the end!');
+        }
+    });
+    
+    // Progress bar click and drag
+    let isDraggingProgress = false;
+    
+    const updateProgressFromEvent = (e) => {
+        const rect = progressBar.getBoundingClientRect();
+        const percent = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+        return percent * audioPlayer.duration;
+    };
+    
+    progressBar.addEventListener('mousedown', (e) => {
+        if (isSettingRepeatPoint) return;
+        isDraggingProgress = true;
+        const time = updateProgressFromEvent(e);
+        audioPlayer.currentTime = time;
+    });
+    
+    document.addEventListener('mousemove', (e) => {
+        if (!isDraggingProgress) return;
+        const time = updateProgressFromEvent(e);
+        audioPlayer.currentTime = time;
+    });
+    
+    document.addEventListener('mouseup', () => {
+        isDraggingProgress = false;
+    });
+    
     progressBar.addEventListener('click', (e) => {
         if (isSettingRepeatPoint) {
             const rect = progressBar.getBoundingClientRect();
@@ -664,13 +713,35 @@ function setupCustomPlayer() {
         volumeBtn.style.opacity = audioPlayer.muted ? '0.5' : '1';
     });
     
-    // Previous/Next (placeholder - implement episode navigation)
-    prevBtn.addEventListener('click', () => {
-        audioPlayer.currentTime = Math.max(0, audioPlayer.currentTime - 10);
+    // Previous/Next Episode buttons
+    prevBtn.addEventListener('click', async () => {
+        const episodesIndex = getEpisodesIndex();
+        const currentIndex = episodesIndex.findIndex(ep => ep.id === currentEpisode.id);
+        
+        if (currentIndex > 0) {
+            showNotification('⏮️ Loading previous episode...');
+            const prevEpisode = await getEpisode(episodesIndex[currentIndex - 1].id);
+            if (prevEpisode) {
+                playEpisode(prevEpisode);
+            }
+        } else {
+            showNotification('⏮️ This is the first episode');
+        }
     });
     
-    nextBtn.addEventListener('click', () => {
-        audioPlayer.currentTime = Math.min(audioPlayer.duration, audioPlayer.currentTime + 10);
+    nextBtn.addEventListener('click', async () => {
+        const episodesIndex = getEpisodesIndex();
+        const currentIndex = episodesIndex.findIndex(ep => ep.id === currentEpisode.id);
+        
+        if (currentIndex < episodesIndex.length - 1) {
+            showNotification('⏭️ Loading next episode...');
+            const nextEpisode = await getEpisode(episodesIndex[currentIndex + 1].id);
+            if (nextEpisode) {
+                playEpisode(nextEpisode);
+            }
+        } else {
+            showNotification('⏭️ This is the last episode');
+        }
     });
 }
 
