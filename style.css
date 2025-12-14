@@ -1250,11 +1250,11 @@ header p {
 .volume-slider {
     position: absolute;
     left: 50%;
-    bottom: 38px;
+    bottom: 32px;
     transform: translateX(-50%);
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
     z-index: 1000;
     align-items: center;
     animation: slideUpFade 0.2s ease-out;
