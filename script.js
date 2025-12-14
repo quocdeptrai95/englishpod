@@ -1141,6 +1141,8 @@ function setupCustomPlayer() {
         audioPlayer.volume = volume;
         audioPlayer.muted = false;
         volumePercentage.textContent = e.target.value + '%';
+        // Update CSS custom property for gradient fill
+        volumeSlider.style.setProperty('--volume-percent', e.target.value + '%');
         updateVolumeIcon();
     });
     

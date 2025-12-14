@@ -1247,70 +1247,121 @@ header p {
 
 .volume-slider {
     position: absolute;
-    left: 0;
-    bottom: 50px;
-    background: var(--bg-card);
+    left: 50%;
+    bottom: 60px;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, var(--bg-card) 0%, rgba(99, 102, 241, 0.05) 100%);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
     border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 12px 16px;
-    box-shadow: var(--shadow-lg);
+    border-radius: 16px;
+    padding: 16px 14px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25),
+                0 0 0 1px rgba(99, 102, 241, 0.1);
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    z-index: 100;
-    min-width: 60px;
+    gap: 12px;
+    z-index: 1000;
     align-items: center;
+    animation: slideUpFade 0.2s ease-out;
+}
+
+@keyframes slideUpFade {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+.volume-slider::before {
+    content: '';
+    position: absolute;
+    bottom: -6px;
+    left: 50%;
+    transform: translateX(-50%) rotate(45deg);
+    width: 12px;
+    height: 12px;
+    background: var(--bg-card);
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    z-index: -1;
 }
 
 .volume-slider input[type="range"] {
     writing-mode: vertical-lr;
     direction: rtl;
-    width: 100px;
-    height: 8px;
+    width: 120px;
+    height: 6px;
     -webkit-appearance: none;
     appearance: none;
-    background: var(--border);
-    border-radius: 4px;
+    background: linear-gradient(to top, var(--accent) 0%, var(--accent) var(--volume-percent, 100%), var(--border) var(--volume-percent, 100%), var(--border) 100%);
+    border-radius: 3px;
     outline: none;
+    cursor: pointer;
+    position: relative;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .volume-slider input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
-    width: 16px;
-    height: 16px;
-    background: var(--accent);
+    width: 18px;
+    height: 18px;
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
     border-radius: 50%;
-    cursor: pointer;
+    cursor: grab;
     transition: all var(--transition-fast);
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4),
+                0 0 0 3px rgba(99, 102, 241, 0.1);
+    border: 2px solid white;
 }
 
 .volume-slider input[type="range"]::-webkit-slider-thumb:hover {
-    transform: scale(1.2);
-    box-shadow: 0 0 8px var(--accent);
+    transform: scale(1.15);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.6),
+                0 0 0 4px rgba(99, 102, 241, 0.15);
+}
+
+.volume-slider input[type="range"]::-webkit-slider-thumb:active {
+    cursor: grabbing;
+    transform: scale(1.05);
 }
 
 .volume-slider input[type="range"]::-moz-range-thumb {
-    width: 16px;
-    height: 16px;
-    background: var(--accent);
+    width: 18px;
+    height: 18px;
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
     border-radius: 50%;
-    cursor: pointer;
-    border: none;
+    cursor: grab;
+    border: 2px solid white;
     transition: all var(--transition-fast);
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4),
+                0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
 .volume-slider input[type="range"]::-moz-range-thumb:hover {
-    transform: scale(1.2);
-    box-shadow: 0 0 8px var(--accent);
+    transform: scale(1.15);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.6),
+                0 0 0 4px rgba(99, 102, 241, 0.15);
+}
+
+.volume-slider input[type="range"]::-moz-range-thumb:active {
+    cursor: grabbing;
+    transform: scale(1.05);
 }
 
 .volume-percentage {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text-primary);
-    min-width: 40px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent);
+    min-width: 45px;
     text-align: center;
+    letter-spacing: 0.5px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .control-btn {
