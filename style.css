@@ -585,7 +585,7 @@ header p {
     justify-content: space-between;
     padding: 0 20px;
     padding-bottom: env(safe-area-inset-bottom);
-    z-index: 999;
+    z-index: 10000;
     backdrop-filter: blur(20px) saturate(180%);
     -webkit-backdrop-filter: blur(20px) saturate(180%);
     box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.2);
@@ -719,15 +719,15 @@ header p {
 .episode-detail {
     max-width: 900px;
     margin: 0 auto 40px;
-    background: rgba(30, 30, 30, 0.95);
+    background: var(--bg-card);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--border);
     border-radius: 12px;
     padding: 32px;
     position: relative;
     animation: scaleIn var(--transition-base);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    box-shadow: var(--shadow-xl);
 }
 
 @keyframes scaleIn {
@@ -1164,13 +1164,13 @@ header p {
 
 .audio-section {
     margin-top: 20px;
-    background: rgba(26, 26, 26, 0.9);
+    background: var(--bg-player);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     padding: 20px;
     border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-lg);
 }
 
 .custom-player {
@@ -1188,7 +1188,7 @@ header p {
 .progress-bar {
     flex: 1;
     height: 6px;
-    background: #333;
+    background: var(--border);
     border-radius: 3px;
     cursor: pointer;
     position: relative;
@@ -1846,14 +1846,13 @@ audio::-webkit-media-controls-panel {
     bottom: 100px;
     left: 50%;
     transform: translateX(-50%) translateY(100px);
-    background: rgba(30, 30, 46, 0.95);
+    background: var(--bg-card);
     backdrop-filter: blur(20px) saturate(180%);
     -webkit-backdrop-filter: blur(20px) saturate(180%);
-    color: #fff;
+    color: var(--text-primary);
     padding: 14px 28px;
     border-radius: 16px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 
-                0 0 0 1px rgba(255, 255, 255, 0.1);
+    box-shadow: var(--shadow-xl), 0 0 0 1px var(--border);
     z-index: 10000;
     font-size: 14px;
     font-weight: 500;
