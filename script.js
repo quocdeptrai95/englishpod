@@ -1111,10 +1111,47 @@ function setupCustomPlayer() {
     });
     
     // Volume control
+    const volumeSlider = document.getElementById('volumeSlider');
+    const volumeSliderContainer = document.querySelector('.volume-slider');
+    const volumeHighIcon = volumeBtn.querySelector('.volume-high-icon');
+    const volumeMutedIcon = volumeBtn.querySelector('.volume-muted-icon');
+    const volumePercentage = document.querySelector('.volume-percentage');
+    let previousVolume = 1;
+    
+    function updateVolumeIcon() {
+        if (audioPlayer.muted || audioPlayer.volume === 0) {
+            volumeHighIcon.style.display = 'none';
+            volumeMutedIcon.style.display = 'block';
+        } else {
+            volumeHighIcon.style.display = 'block';
+            volumeMutedIcon.style.display = 'none';
+        }
+    }
+    
     volumeBtn.addEventListener('click', () => {
-        audioPlayer.muted = !audioPlayer.muted;
-        volumeBtn.style.opacity = audioPlayer.muted ? '0.5' : '1';
+        if (volumeSliderContainer.style.display === 'none') {
+            volumeSliderContainer.style.display = 'flex';
+        } else {
+            volumeSliderContainer.style.display = 'none';
+        }
     });
+    
+    volumeSlider.addEventListener('input', (e) => {
+        const volume = e.target.value / 100;
+        audioPlayer.volume = volume;
+        audioPlayer.muted = false;
+        volumePercentage.textContent = e.target.value + '%';
+        updateVolumeIcon();
+    });
+    
+    // Click outside to close volume slider
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.volume-control')) {
+            volumeSliderContainer.style.display = 'none';
+        }
+    });
+    
+    updateVolumeIcon();
     
     // Previous/Next Episode buttons
     prevBtn.addEventListener('click', async () => {
