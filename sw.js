@@ -1,4 +1,4 @@
-const CACHE_NAME = 'english-v10';
+const CACHE_NAME = 'english-v11';
 const AUDIO_CACHE_NAME = 'english-audio-v2';
 const urlsToCache = [
     './',
@@ -68,10 +68,13 @@ self.addEventListener('fetch', event => {
         return;
     }
 
-    // For script.js and index.html - ALWAYS check network first (network-first strategy)
-    if (url.includes('script.js') || url.endsWith('/') || url.includes('index.html')) {
+    // For critical files (script.js, style.css, index.html) - ALWAYS check network first
+    // This ensures users always get the latest code
+    if (url.includes('script.js') || url.includes('style.css') || url.endsWith('/') || url.includes('index.html')) {
         event.respondWith(
-            fetch(event.request)
+            fetch(event.request, {
+                cache: 'no-cache' // Force network check, bypass browser cache
+            })
                 .then(response => {
                     // Update cache with fresh version
                     if (response && response.status === 200 && response.type === 'basic') {
@@ -84,7 +87,16 @@ self.addEventListener('fetch', event => {
                 })
                 .catch(() => {
                     // Network failed, fallback to cache
-                    return caches.match(event.request);
+                    return caches.match(event.request)
+                        .then(cachedResponse => {
+                            if (cachedResponse) {
+                                return cachedResponse;
+                            }
+                            return new Response('Offline - No cached version available', {
+                                status: 503,
+                                statusText: 'Service Unavailable'
+                            });
+                        });
                 })
         );
         return;

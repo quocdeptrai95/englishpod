@@ -236,56 +236,83 @@ async function searchEpisodes(query) {
         .filter(ep => !results.find(r => r.id === ep.id))
         .slice(0, 50) // Limit detailed search to 50 episodes for performance
         .map(async (ep) => {
-            const episode = await getEpisode(ep.id);
-            if (!episode) return null;
+            try {
+                const episode = await getEpisode(ep.id);
+                if (!episode) return null;
             
             let score = 0;
             let matched = false;
             
-            // Search in vocabulary
+            // Search in vocabulary (with safety checks)
             if (episode.vocabulary) {
-                const vocabMatch = 
-                    episode.vocabulary.key?.some(v => v.word.toLowerCase().includes(lowerQuery)) ||
-                    episode.vocabulary.supplementary?.some(v => v.word.toLowerCase().includes(lowerQuery));
-                if (vocabMatch) {
-                    score += 30;
-                    matched = true;
+                try {
+                    const keyMatch = Array.isArray(episode.vocabulary.key) && 
+                        episode.vocabulary.key.some(v => v && v.word && v.word.toLowerCase().includes(lowerQuery));
+                    const suppMatch = Array.isArray(episode.vocabulary.supplementary) && 
+                        episode.vocabulary.supplementary.some(v => v && v.word && v.word.toLowerCase().includes(lowerQuery));
+                    
+                    if (keyMatch || suppMatch) {
+                        score += 30;
+                        matched = true;
+                    }
+                } catch (e) {
+                    // Skip vocab search if error
                 }
             }
             
-            // Search in transcript
-            if (episode.dialogue) {
-                const transcriptMatch = episode.dialogue.some(line => 
-                    line.text.toLowerCase().includes(lowerQuery)
-                );
-                if (transcriptMatch) {
-                    score += 20;
-                    matched = true;
+            // Search in transcript (with safety checks)
+            if (Array.isArray(episode.dialogue)) {
+                try {
+                    const transcriptMatch = episode.dialogue.some(line => 
+                        line && line.text && line.text.toLowerCase().includes(lowerQuery)
+                    );
+                    if (transcriptMatch) {
+                        score += 20;
+                        matched = true;
+                    }
+                } catch (e) {
+                    // Skip transcript search if error
                 }
             }
             
             return matched ? { ...ep, score } : null;
+            } catch (error) {
+                // If episode loading fails, skip it
+                console.warn(`Failed to search episode ${ep.id}:`, error);
+                return null;
+            }
         });
     
-    const detailedResults = (await Promise.all(detailedSearchPromises)).filter(Boolean);
-    const allResults = [...results, ...detailedResults].sort((a, b) => b.score - a.score);
+    try {
+        const detailedResults = (await Promise.all(detailedSearchPromises)).filter(Boolean);
+        const allResults = [...results, ...detailedResults].sort((a, b) => b.score - a.score);
     
-    // Cache results
-    searchCache.set(lowerQuery, allResults);
-    
-    // Limit cache size
-    if (searchCache.size > 20) {
-        const firstKey = searchCache.keys().next().value;
-        searchCache.delete(firstKey);
+        // Cache results
+        searchCache.set(lowerQuery, allResults);
+        
+        // Limit cache size
+        if (searchCache.size > 20) {
+            const firstKey = searchCache.keys().next().value;
+            searchCache.delete(firstKey);
+        }
+        
+        displaySearchResults(allResults, lowerQuery);
+    } catch (error) {
+        console.error('Search error:', error);
+        // Show title/level results at least
+        displaySearchResults(results, lowerQuery);
     }
-    
-    displaySearchResults(allResults, lowerQuery);
 }
 
 function displaySearchResults(results, query) {
     if (currentSearchQuery !== query) return; // Query changed, ignore
     
-    if (results.length === 0) {
+    if (!searchResultsInfo || !episodesGrid) {
+        console.error('Search UI elements not found');
+        return;
+    }
+    
+    if (!Array.isArray(results) || results.length === 0) {
         searchResultsInfo.style.display = 'block';
         searchResultsInfo.innerHTML = `No results found for "<span class="highlight">${escapeHtml(query)}</span>"`;
         episodesGrid.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-secondary);">Try different keywords</div>';
@@ -430,6 +457,25 @@ function initApp() {
     updateRecentlyPlayedUI();
     
     renderEpisodes();
+    
+    // Force service worker update check
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.ready.then(registration => {
+            registration.update().catch(() => {});
+        });
+        
+        // Listen for updates
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            // New service worker activated, show notification
+            if (window.localStorage.getItem('sw-updated') !== 'true') {
+                window.localStorage.setItem('sw-updated', 'true');
+                showNotification('✨ App updated! Refresh for new features.');
+                setTimeout(() => {
+                    window.localStorage.removeItem('sw-updated');
+                }, 5000);
+            }
+        });
+    }
 }
 
 // Initialize when DOM is ready
