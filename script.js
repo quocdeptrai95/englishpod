@@ -1,6 +1,71 @@
 let currentFilter = 'all';
 let displayedCount = 30;
 const LOAD_MORE_COUNT = 30;
+let currentSearchQuery = '';
+let searchCache = new Map(); // Cache search results
+
+// Recently Played System
+const RECENTLY_PLAYED_KEY = 'englishpod_recent';
+const MAX_RECENT = 10;
+
+function getRecentlyPlayed() {
+    try {
+        const data = localStorage.getItem(RECENTLY_PLAYED_KEY);
+        return data ? JSON.parse(data) : [];
+    } catch {
+        return [];
+    }
+}
+
+function addToRecentlyPlayed(episodeId, title, level) {
+    try {
+        let recent = getRecentlyPlayed();
+        // Remove if already exists
+        recent = recent.filter(ep => ep.id !== episodeId);
+        // Add to front
+        recent.unshift({ id: episodeId, title, level, timestamp: Date.now() });
+        // Keep only last 10
+        recent = recent.slice(0, MAX_RECENT);
+        localStorage.setItem(RECENTLY_PLAYED_KEY, JSON.stringify(recent));
+        updateRecentlyPlayedUI();
+    } catch (e) {
+        console.error('Failed to save recently played:', e);
+    }
+}
+
+function updateRecentlyPlayedUI() {
+    const container = document.getElementById('recentlyPlayed');
+    if (!container) return;
+    
+    const recent = getRecentlyPlayed();
+    if (recent.length === 0) {
+        container.style.display = 'none';
+        return;
+    }
+    
+    container.style.display = 'block';
+    const grid = container.querySelector('.recent-grid');
+    if (!grid) return;
+    
+    grid.innerHTML = recent.map(ep => `
+        <div class="recent-item" data-id="${ep.id}">
+            <div class="recent-number">#${ep.id}</div>
+            <div class="recent-info">
+                <div class="recent-title">${ep.title}</div>
+                <div class="recent-level">${ep.level}</div>
+            </div>
+        </div>
+    `).join('');
+    
+    // Add click handlers
+    grid.querySelectorAll('.recent-item').forEach(item => {
+        item.addEventListener('click', async () => {
+            const id = item.dataset.id;
+            const episode = await getEpisode(id);
+            if (episode) playEpisode(episode);
+        });
+    });
+}
 
 // Notification function
 function showNotification(message) {
@@ -82,14 +147,287 @@ const detailLevel = document.getElementById('detailLevel');
 const showBtn = document.getElementById('showBtn');
 const closeBtn = document.getElementById('closeBtn');
 const transcriptContent = document.getElementById('transcriptContent');
+const searchInput = document.getElementById('searchInput');
+const searchClear = document.getElementById('searchClear');
+const searchResultsInfo = document.getElementById('searchResultsInfo');
+
+// Theme Management
+const THEME_KEY = 'englishpod_theme';
+
+function getTheme() {
+    return localStorage.getItem(THEME_KEY) || 'dark';
+}
+
+function setTheme(theme) {
+    localStorage.setItem(THEME_KEY, theme);
+    document.documentElement.setAttribute('data-theme', theme);
+    
+    const themeIcon = document.querySelector('.theme-icon');
+    if (themeIcon) {
+        themeIcon.textContent = theme === 'light' ? '🌙' : '☀️';
+    }
+}
+
+function toggleTheme() {
+    const currentTheme = getTheme();
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+    showNotification(newTheme === 'light' ? '☀️ Light mode' : '🌙 Dark mode');
+}
+
+// Search System
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+async function searchEpisodes(query) {
+    if (!query || query.length < 2) {
+        currentSearchQuery = '';
+        searchResultsInfo.style.display = 'none';
+        renderEpisodes();
+        return;
+    }
+    
+    const lowerQuery = query.toLowerCase().trim();
+    currentSearchQuery = lowerQuery;
+    
+    // Check cache first
+    if (searchCache.has(lowerQuery)) {
+        const cached = searchCache.get(lowerQuery);
+        displaySearchResults(cached, lowerQuery);
+        return;
+    }
+    
+    // Search in episodes index first (title and level)
+    const episodesIndex = getEpisodesIndex();
+    const results = [];
+    
+    for (const ep of episodesIndex) {
+        let score = 0;
+        let matched = false;
+        
+        // Search in title (highest priority)
+        if (ep.title.toLowerCase().includes(lowerQuery)) {
+            score += 100;
+            matched = true;
+        }
+        
+        // Search in level
+        if (ep.level.toLowerCase().includes(lowerQuery)) {
+            score += 50;
+            matched = true;
+        }
+        
+        if (matched) {
+            results.push({ ...ep, score });
+        }
+    }
+    
+    // Load episodes and search in vocab/transcript for remaining episodes
+    const detailedSearchPromises = episodesIndex
+        .filter(ep => !results.find(r => r.id === ep.id))
+        .slice(0, 50) // Limit detailed search to 50 episodes for performance
+        .map(async (ep) => {
+            const episode = await getEpisode(ep.id);
+            if (!episode) return null;
+            
+            let score = 0;
+            let matched = false;
+            
+            // Search in vocabulary
+            if (episode.vocabulary) {
+                const vocabMatch = 
+                    episode.vocabulary.key?.some(v => v.word.toLowerCase().includes(lowerQuery)) ||
+                    episode.vocabulary.supplementary?.some(v => v.word.toLowerCase().includes(lowerQuery));
+                if (vocabMatch) {
+                    score += 30;
+                    matched = true;
+                }
+            }
+            
+            // Search in transcript
+            if (episode.dialogue) {
+                const transcriptMatch = episode.dialogue.some(line => 
+                    line.text.toLowerCase().includes(lowerQuery)
+                );
+                if (transcriptMatch) {
+                    score += 20;
+                    matched = true;
+                }
+            }
+            
+            return matched ? { ...ep, score } : null;
+        });
+    
+    const detailedResults = (await Promise.all(detailedSearchPromises)).filter(Boolean);
+    const allResults = [...results, ...detailedResults].sort((a, b) => b.score - a.score);
+    
+    // Cache results
+    searchCache.set(lowerQuery, allResults);
+    
+    // Limit cache size
+    if (searchCache.size > 20) {
+        const firstKey = searchCache.keys().next().value;
+        searchCache.delete(firstKey);
+    }
+    
+    displaySearchResults(allResults, lowerQuery);
+}
+
+function displaySearchResults(results, query) {
+    if (currentSearchQuery !== query) return; // Query changed, ignore
+    
+    if (results.length === 0) {
+        searchResultsInfo.style.display = 'block';
+        searchResultsInfo.innerHTML = `No results found for "<span class="highlight">${escapeHtml(query)}</span>"`;
+        episodesGrid.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-secondary);">Try different keywords</div>';
+        return;
+    }
+    
+    searchResultsInfo.style.display = 'block';
+    searchResultsInfo.innerHTML = `Found <span class="highlight">${results.length}</span> episode${results.length > 1 ? 's' : ''} for "<span class="highlight">${escapeHtml(query)}</span>"`;
+    
+    // Render filtered results
+    displayedCount = Math.min(30, results.length);
+    renderFilteredEpisodes(results);
+}
+
+function renderFilteredEpisodes(filteredEpisodes) {
+    episodesGrid.innerHTML = '<div class="skeleton skeleton-card"></div>'.repeat(12);
+    
+    requestAnimationFrame(() => {
+        const fragment = document.createDocumentFragment();
+        const toDisplay = filteredEpisodes.slice(0, displayedCount);
+        
+        toDisplay.forEach((ep, index) => {
+            const card = document.createElement('div');
+            card.className = 'episode-card';
+            card.dataset.id = ep.id;
+            card.style.opacity = '0';
+            card.style.animation = `fadeIn 0.2s ease-out ${Math.min(index * 10, 200)}ms forwards`;
+            
+            card.innerHTML = `
+                <div class="episode-number">${ep.id}</div>
+                <h3>${ep.title}</h3>
+                <span class="level-badge">${ep.level}</span>
+            `;
+            
+            card.addEventListener('click', async () => {
+                const originalHTML = card.innerHTML;
+                card.style.opacity = '0.5';
+                card.style.pointerEvents = 'none';
+                card.innerHTML = `
+                    <div class="episode-number">${ep.id}</div>
+                    <h3>${ep.title}</h3>
+                    <span class="level-badge">${ep.level}</span>
+                    <div style="text-align: center; margin-top: 10px; color: #6366f1;">Loading...</div>
+                `;
+                
+                const episode = await getEpisode(ep.id);
+                if (episode) {
+                    playEpisode(episode);
+                } else {
+                    card.innerHTML = originalHTML;
+                    card.style.opacity = '1';
+                    card.style.pointerEvents = 'auto';
+                    showNotification('❌ Failed to load episode');
+                }
+            });
+            
+            fragment.appendChild(card);
+        });
+        
+        episodesGrid.innerHTML = '';
+        episodesGrid.appendChild(fragment);
+        
+        // Add "Load More" button if there are more results
+        if (displayedCount < filteredEpisodes.length) {
+            const loadMoreBtn = document.createElement('button');
+            loadMoreBtn.className = 'load-more-btn';
+            loadMoreBtn.textContent = `Load More (${filteredEpisodes.length - displayedCount} remaining)`;
+            loadMoreBtn.onclick = () => {
+                displayedCount += LOAD_MORE_COUNT;
+                loadMoreBtn.remove();
+                renderFilteredEpisodes(filteredEpisodes);
+            };
+            episodesGrid.appendChild(loadMoreBtn);
+        }
+    });
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Debounced search handler
+const debouncedSearch = debounce(searchEpisodes, 300);
 
 // Initialize app
 function initApp() {
+    // Apply saved theme
+    setTheme(getTheme());
+    
+    // Theme toggle button
+    const themeToggle = document.getElementById('themeToggle');
+    if (themeToggle) {
+        themeToggle.addEventListener('click', toggleTheme);
+    }
+    
     // Main title click to go home
     const mainTitle = document.getElementById('mainTitle');
     if (mainTitle) {
         mainTitle.addEventListener('click', () => location.reload());
     }
+    
+    // Search functionality
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            const query = e.target.value.trim();
+            
+            if (query) {
+                searchClear.style.display = 'flex';
+            } else {
+                searchClear.style.display = 'none';
+            }
+            
+            debouncedSearch(query);
+        });
+        
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                searchInput.value = '';
+                searchClear.style.display = 'none';
+                currentSearchQuery = '';
+                searchResultsInfo.style.display = 'none';
+                renderEpisodes();
+            }
+        });
+    }
+    
+    if (searchClear) {
+        searchClear.addEventListener('click', () => {
+            searchInput.value = '';
+            searchClear.style.display = 'none';
+            currentSearchQuery = '';
+            searchResultsInfo.style.display = 'none';
+            searchCache.clear();
+            renderEpisodes();
+            searchInput.focus();
+        });
+    }
+    
+    // Show recently played episodes
+    updateRecentlyPlayedUI();
     
     renderEpisodes();
 }
@@ -107,6 +445,15 @@ document.querySelectorAll('.filter-tab').forEach(tab => {
         document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
         currentFilter = tab.dataset.level;
+        
+        // Clear search when changing filters
+        if (searchInput) {
+            searchInput.value = '';
+            searchClear.style.display = 'none';
+            currentSearchQuery = '';
+            searchResultsInfo.style.display = 'none';
+        }
+        
         renderEpisodes();
     });
 });
@@ -179,6 +526,9 @@ showVocabBtn.addEventListener('click', () => {
 });
 
 function renderEpisodes(append = false) {
+    // If search is active, don't override search results
+    if (currentSearchQuery) return;
+    
     const episodesIndex = getEpisodesIndex();
     
     // Wait for episodes index to load if not ready yet
@@ -212,6 +562,7 @@ function renderEpisodes(append = false) {
             card.style.opacity = '0';
             // Reduced animation delay for faster perceived loading
             card.style.animation = `fadeIn 0.2s ease-out ${append ? 0 : Math.min(index * 10, 200)}ms forwards`;
+            
                 card.innerHTML = `
                     <div class="episode-number">${ep.id}</div>
                     <h3>${ep.title}</h3>
@@ -271,8 +622,14 @@ let currentEpisode = null;
 function playEpisode(episode) {
     currentEpisode = episode;
     
+    // Add to recently played
+    addToRecentlyPlayed(episode.id, episode.title, episode.level);
+    
     detailTitle.textContent = episode.title;
     detailLevel.textContent = episode.level;
+    
+    // Update mini player
+    updateMiniPlayer();
     
     // Show episode detail immediately
     episodesGrid.style.display = 'none';
@@ -1505,6 +1862,178 @@ async function handleRecordClick() {
 document.addEventListener('visibilitychange', () => {
     // Don't do anything - let audio continue playing in background
     // This is important for mobile background playback
+});
+
+// Mini Player Logic
+const miniPlayer = document.getElementById('miniPlayer');
+const miniPlayBtn = document.getElementById('miniPlayBtn');
+const miniExpandBtn = document.getElementById('miniExpandBtn');
+
+function updateMiniPlayer() {
+    if (!currentEpisode) return;
+    
+    document.getElementById('miniEpisodeNumber').textContent = `#${currentEpisode.id}`;
+    document.getElementById('miniEpisodeTitle').textContent = currentEpisode.title;
+    document.getElementById('miniEpisodeLevel').textContent = currentEpisode.level;
+}
+
+function updateMiniPlayerState() {
+    const playIcon = miniPlayBtn.querySelector('.mini-play-icon');
+    const pauseIcon = miniPlayBtn.querySelector('.mini-pause-icon');
+    
+    if (audioPlayer.paused) {
+        playIcon.style.display = 'block';
+        pauseIcon.style.display = 'none';
+    } else {
+        playIcon.style.display = 'none';
+        pauseIcon.style.display = 'block';
+    }
+}
+
+// Show mini player when scrolling down and episode is playing
+let lastScrollY = 0;
+let scrollTimeout;
+
+window.addEventListener('scroll', () => {
+    if (!currentEpisode || !audioPlayer.src) return;
+    
+    // Throttle scroll event for better performance
+    if (scrollTimeout) return;
+    
+    scrollTimeout = setTimeout(() => {
+        const currentScrollY = window.scrollY;
+        const episodeDetailVisible = episodeDetail.style.display !== 'none';
+        
+        // Show mini player when scrolled down and episode detail is visible
+        if (currentScrollY > 300 && episodeDetailVisible) {
+            miniPlayer.classList.add('show');
+            miniPlayer.style.display = 'flex';
+        } else {
+            miniPlayer.classList.remove('show');
+        }
+        
+        lastScrollY = currentScrollY;
+        scrollTimeout = null;
+    }, 100); // Throttle to 100ms
+}, { passive: true });
+
+// Mini player play/pause button
+miniPlayBtn.addEventListener('click', (e) => {
+    e.stopPropagation(); // Prevent event bubbling
+    if (audioPlayer.paused) {
+        audioPlayer.play().catch(() => {});
+    } else {
+        audioPlayer.pause();
+    }
+});
+
+// Mini player expand button - scroll back to episode detail
+miniExpandBtn.addEventListener('click', (e) => {
+    e.stopPropagation(); // Prevent event bubbling
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    miniPlayer.classList.remove('show');
+});
+
+// Mini player info click - also expand
+miniPlayer.querySelector('.mini-player-info').addEventListener('click', () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    miniPlayer.classList.remove('show');
+});
+
+// Update mini player when audio state changes
+audioPlayer.addEventListener('play', updateMiniPlayerState);
+audioPlayer.addEventListener('pause', updateMiniPlayerState);
+
+// Handle orientation changes smoothly
+window.addEventListener('orientationchange', () => {
+    // Recalculate mini player visibility after orientation change
+    setTimeout(() => {
+        if (currentEpisode && audioPlayer.src) {
+            const currentScrollY = window.scrollY;
+            const episodeDetailVisible = episodeDetail.style.display !== 'none';
+            if (currentScrollY > 300 && episodeDetailVisible) {
+                miniPlayer.classList.add('show');
+                miniPlayer.style.display = 'flex';
+            }
+        }
+    }, 300);
+});
+
+// Keyboard Shortcuts
+document.addEventListener('keydown', (e) => {
+    // Don't trigger shortcuts if user is typing in an input/textarea
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    
+    // Space: Play/Pause
+    if (e.code === 'Space') {
+        e.preventDefault();
+        if (episodeDetail.style.display !== 'none' && audioPlayer.src) {
+            if (audioPlayer.paused) {
+                audioPlayer.play().catch(() => {});
+            } else {
+                audioPlayer.pause();
+            }
+        }
+    }
+    
+    // Left Arrow: Seek backward 10s
+    if (e.code === 'ArrowLeft' && audioPlayer.src) {
+        e.preventDefault();
+        audioPlayer.currentTime = Math.max(0, audioPlayer.currentTime - 10);
+        showNotification('⏪ -10s');
+    }
+    
+    // Right Arrow: Seek forward 10s
+    if (e.code === 'ArrowRight' && audioPlayer.src) {
+        e.preventDefault();
+        audioPlayer.currentTime = Math.min(audioPlayer.duration, audioPlayer.currentTime + 10);
+        showNotification('⏩ +10s');
+    }
+    
+    // Up Arrow: Volume up
+    if (e.code === 'ArrowUp' && audioPlayer.src) {
+        e.preventDefault();
+        audioPlayer.volume = Math.min(1, audioPlayer.volume + 0.1);
+        audioPlayer.muted = false;
+        const volumeBtn = document.getElementById('volumeBtn');
+        if (volumeBtn) volumeBtn.style.opacity = '1';
+        showNotification(`🔊 ${Math.round(audioPlayer.volume * 100)}%`);
+    }
+    
+    // Down Arrow: Volume down
+    if (e.code === 'ArrowDown' && audioPlayer.src) {
+        e.preventDefault();
+        audioPlayer.volume = Math.max(0, audioPlayer.volume - 0.1);
+        showNotification(`🔉 ${Math.round(audioPlayer.volume * 100)}%`);
+    }
+    
+    // N: Next Episode
+    if ((e.key === 'n' || e.key === 'N') && currentEpisode) {
+        e.preventDefault();
+        const nextBtn = document.getElementById('nextBtn');
+        if (nextBtn) nextBtn.click();
+    }
+    
+    // P: Previous Episode
+    if ((e.key === 'p' || e.key === 'P') && currentEpisode) {
+        e.preventDefault();
+        const prevBtn = document.getElementById('prevBtn');
+        if (prevBtn) prevBtn.click();
+    }
+    
+    // L: Toggle Loop/Repeat
+    if ((e.key === 'l' || e.key === 'L') && currentEpisode && audioPlayer.src) {
+        e.preventDefault();
+        const repeatBtn = document.getElementById('repeatBtn');
+        if (repeatBtn) repeatBtn.click();
+    }
+    
+    // Escape: Close episode detail
+    if (e.code === 'Escape' && episodeDetail.style.display !== 'none') {
+        e.preventDefault();
+        const closeBtn = document.getElementById('closeBtn');
+        if (closeBtn) closeBtn.click();
+    }
 });
 
 // Translation cache to avoid repeated API calls

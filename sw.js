@@ -1,4 +1,4 @@
-const CACHE_NAME = 'english-v5';
+const CACHE_NAME = 'english-v10';
 const AUDIO_CACHE_NAME = 'english-audio-v2';
 const urlsToCache = [
     './',
