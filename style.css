@@ -1250,27 +1250,14 @@ header p {
 .volume-slider {
     position: absolute;
     left: 50%;
-    bottom: 40px;
+    bottom: 45px;
     transform: translateX(-50%);
-    background: linear-gradient(180deg, 
-        rgba(99, 102, 241, 0.08) 0%,
-        var(--bg-card) 50%,
-        rgba(99, 102, 241, 0.08) 100%);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border: 1px solid var(--border);
-    border-radius: 24px 24px 12px 12px;
-    padding: 20px 10px 8px 10px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2),
-                0 0 0 1px rgba(99, 102, 241, 0.15),
-                inset 0 1px 0 rgba(255, 255, 255, 0.1);
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
     z-index: 1000;
     align-items: center;
-    animation: slideUpFade 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-    min-height: 150px;
+    animation: slideUpFade 0.2s ease-out;
 }
 
 @keyframes slideUpFade {
@@ -1372,16 +1359,12 @@ header p {
 }
 
 .volume-percentage {
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--accent);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
     min-width: 36px;
     text-align: center;
-    letter-spacing: 0.5px;
-    background: rgba(99, 102, 241, 0.1);
-    padding: 4px 8px;
-    border-radius: 8px;
-    border: 1px solid rgba(99, 102, 241, 0.2);
+    opacity: 0.8;
 }
 
 .control-btn {
