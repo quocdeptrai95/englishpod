@@ -89,10 +89,6 @@ button {
         min-height: 44px;
     }
     
-    .recent-item {
-        min-height: 60px;
-    }
-    
     /* Remove hover effects on touch devices */
     .episode-card:hover,
     .filter-tab:hover,
@@ -151,8 +147,6 @@ body {
 /* Smooth theme transitions for major elements */
 .episode-card,
 .filter-tab,
-.recently-played,
-.recent-item,
 .mini-player,
 .theme-toggle,
 .notification {
@@ -504,73 +498,6 @@ header p {
 }
 
 /* Recently Played Section */
-.recently-played {
-    margin: 30px 0;
-    padding: 24px;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    animation: fadeIn var(--transition-base);
-}
-
-.recently-played h3 {
-    font-size: 18px;
-    margin-bottom: 16px;
-    color: var(--text-primary);
-    font-weight: 600;
-}
-
-.recent-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 12px;
-}
-
-.recent-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px;
-    background: var(--bg-primary);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all var(--transition-fast);
-}
-
-.recent-item:hover {
-    border-color: var(--accent);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-sm);
-}
-
-.recent-number {
-    font-size: 14px;
-    color: var(--accent);
-    font-weight: 700;
-    min-width: 30px;
-}
-
-.recent-info {
-    flex: 1;
-    overflow: hidden;
-}
-
-.recent-title {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text-primary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.recent-level {
-    font-size: 12px;
-    color: var(--text-secondary);
-    margin-top: 2px;
-}
-
 /* Mini Player */
 .mini-player {
     position: fixed;
@@ -1598,22 +1525,6 @@ audio::-webkit-media-controls-panel {
         padding: 20px 16px;
     }
     
-    /* Recently Played responsive */
-    .recently-played {
-        padding: 16px;
-        margin: 20px 0;
-    }
-    
-    .recent-grid {
-        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-        gap: 10px;
-    }
-    
-    .recent-item {
-        padding: 10px;
-        gap: 10px;
-    }
-    
     /* Mini Player responsive - Tablet */
     .mini-player {
         height: 70px;
@@ -1761,40 +1672,6 @@ audio::-webkit-media-controls-panel {
     .search-results-info {
         font-size: 13px;
         margin-top: 8px;
-    }
-    
-    /* Recently Played mobile */
-    .recently-played {
-        padding: 12px;
-        margin: 16px 0;
-    }
-    
-    .recently-played h3 {
-        font-size: 16px;
-        margin-bottom: 12px;
-    }
-    
-    .recent-grid {
-        grid-template-columns: 1fr;
-        gap: 8px;
-    }
-    
-    .recent-item {
-        padding: 10px;
-        gap: 10px;
-    }
-    
-    .recent-number {
-        font-size: 13px;
-        min-width: 25px;
-    }
-    
-    .recent-title {
-        font-size: 13px;
-    }
-    
-    .recent-level {
-        font-size: 11px;
     }
     
     /* Mini Player mobile - Optimized for touch */

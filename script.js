@@ -4,69 +4,6 @@ const LOAD_MORE_COUNT = 30;
 let currentSearchQuery = '';
 let searchCache = new Map(); // Cache search results
 
-// Recently Played System
-const RECENTLY_PLAYED_KEY = 'englishpod_recent';
-const MAX_RECENT = 10;
-
-function getRecentlyPlayed() {
-    try {
-        const data = localStorage.getItem(RECENTLY_PLAYED_KEY);
-        return data ? JSON.parse(data) : [];
-    } catch {
-        return [];
-    }
-}
-
-function addToRecentlyPlayed(episodeId, title, level) {
-    try {
-        let recent = getRecentlyPlayed();
-        // Remove if already exists
-        recent = recent.filter(ep => ep.id !== episodeId);
-        // Add to front
-        recent.unshift({ id: episodeId, title, level, timestamp: Date.now() });
-        // Keep only last 10
-        recent = recent.slice(0, MAX_RECENT);
-        localStorage.setItem(RECENTLY_PLAYED_KEY, JSON.stringify(recent));
-        updateRecentlyPlayedUI();
-    } catch (e) {
-        console.error('Failed to save recently played:', e);
-    }
-}
-
-function updateRecentlyPlayedUI() {
-    const container = document.getElementById('recentlyPlayed');
-    if (!container) return;
-    
-    const recent = getRecentlyPlayed();
-    if (recent.length === 0) {
-        container.style.display = 'none';
-        return;
-    }
-    
-    container.style.display = 'block';
-    const grid = container.querySelector('.recent-grid');
-    if (!grid) return;
-    
-    grid.innerHTML = recent.map(ep => `
-        <div class="recent-item" data-id="${ep.id}">
-            <div class="recent-number">#${ep.id}</div>
-            <div class="recent-info">
-                <div class="recent-title">${ep.title}</div>
-                <div class="recent-level">${ep.level}</div>
-            </div>
-        </div>
-    `).join('');
-    
-    // Add click handlers
-    grid.querySelectorAll('.recent-item').forEach(item => {
-        item.addEventListener('click', async () => {
-            const id = item.dataset.id;
-            const episode = await getEpisode(id);
-            if (episode) playEpisode(episode);
-        });
-    });
-}
-
 // Notification function
 function showNotification(message) {
     // Remove existing notification
@@ -453,9 +390,6 @@ function initApp() {
         });
     }
     
-    // Show recently played episodes
-    updateRecentlyPlayedUI();
-    
     renderEpisodes();
     
     // Force service worker update check
@@ -667,9 +601,6 @@ let currentEpisode = null;
 
 function playEpisode(episode) {
     currentEpisode = episode;
-    
-    // Add to recently played
-    addToRecentlyPlayed(episode.id, episode.title, episode.level);
     
     detailTitle.textContent = episode.title;
     detailLevel.textContent = episode.level;
